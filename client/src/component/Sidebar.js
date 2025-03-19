@@ -1,39 +1,21 @@
 import { useState } from "react";
 import "../App.css";
-import { Tooltip } from "antd";
 import CustomTabs from "./CustomTabs";
 import axios from "axios";
 import MapComponent from "./Map";
+import AutoCompleteSearch from "./AutoCompleteSearch";
+import { Tooltip } from "antd";
 
 const Sidebar = ({ open }) => {
   const [mapReady, setMapReady] = useState(false);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [getUserLocation, setUserLocation] = useState(false);
+  
   const [fromCoords, setFromCoords] = useState(null);
   const [toCoords, setToCoords] = useState(null);
 
-  const fetchCoordinates = async (address) => {
-    try {
-      const response = await axios.get("http://localhost:3001/Map/get", {
-        params: { address },
-      });
-      return response.data;
-    } catch (error) {
-      console.error(
-        "Error fetching data:",
-        error.response?.data || error.message
-      );
-    }
-  };
-  const handleFromSearch = async () => {
-    const coords = await fetchCoordinates(from);
-    setFromCoords(coords[0]);
-  };
-  const handleToSearch = async () => {
-    const coords = await fetchCoordinates(to);
-    setToCoords(coords[0]);
-  };
+
   return (
     <div className="relative">
       <MapComponent locate_user={getUserLocation} onLoad={() => setMapReady(true)} from_coord={fromCoords} to_coord={toCoords} />
@@ -51,73 +33,22 @@ const Sidebar = ({ open }) => {
             ${open ? "translate-y-0 md:translate-x-0" : "translate-y-full md:-translate-x-full"}
             md:translate-y-0`}
         >
-          <div className="flex flex-col gap-5 relative md:top-5">
-            <div className="flex flex-col gap-y-4">
-              {/* From Field */}
-              <div className="flex flex-row gap-2 items-center">
-                <div className="w-10 text-left font-bold">From:</div>
-                {/* Input Container with consistent width */}
-                <div className="flex items-center flex-grow bg-slate-50 rounded-sm p-1">
-                  <input
-                    className="bg-transparent w-full text-black focus:outline-none pl-1"
-                    value={from}
-                    onChange={(e) => setFrom(e.target.value)}
-                  />
-                  <button
-                    className="text-gray-500"
-                    onClick={() => handleFromSearch()}
-                  >
-                    <img
-                      src="https://i.imgur.com/MdNd6W3.png"
-                      className="w-5 h-5"
-                      alt="Search"
-                    />
-                  </button>
-                </div>
-                <Tooltip title="Your location" placement="top">
-                  <button onClick={() => setUserLocation(true)}>
-                    <img
-                      className="w-7 h-7"
-                      src="https://i.imgur.com/s3OX5uw.png"
-                      alt="Your location"
-                    />
-                  </button>
-                </Tooltip>
-              </div>
-              {/* To Field */}
-              <div className="flex flex-row gap-2 items-center">
-                <div className="w-10 text-left font-bold">To:</div>
-                {/* Input Container with consistent width */}
-                <div className="flex items-center flex-grow bg-slate-50 rounded-sm p-1">
-                  <input
-                    className="bg-transparent w-full text-black focus:outline-none pl-1"
-                    value={to}
-                    onChange={(e) => setTo(e.target.value)}
-                  />
-                  <button
-                    className="text-gray-500"
-                    onClick={()=>handleToSearch()}
-                  >
-                    <img
-                      src="https://i.imgur.com/MdNd6W3.png"
-                      className="w-5 h-5"
-                      alt="Search"
-                    />
-                  </button>
-                </div>
-                <Tooltip title="Directions" placement="top">
-                  <button>
-                    <img
-                      className="w-7 h-7"
-                      src="https://i.imgur.com/BXJ2wwe.png"
-                      alt="Direction"
-                    />
-                  </button>
-                </Tooltip>
-              </div>
+          <div className="flex flex-col gap-2 p-4">
+            <div>
+              <AutoCompleteSearch placeholder="Chọn điểm bắt đầu" setCoordinate={setFromCoords}/>
+              <Tooltip title="Chọn vị trí của bạn" placement="top">
+                <button onClick={() => setUserLocation(true)}><img src="https://i.imgur.com/s3OX5uw.png" className="w-6 h-6 relative top-1"></img></button>  
+              </Tooltip>
             </div>
-            <CustomTabs />
+            <div>
+              <AutoCompleteSearch placeholder="Chọn đích đến" setCoordinate={setToCoords}/>
+              <Tooltip title="Chỉ đường" placement="top">
+                <button><img src="https://i.imgur.com/BXJ2wwe_d.png?maxwidth=520&shape=thumb&fidelity=high" className="w-6 h-6 relative top-1"></img></button>  
+              </Tooltip>
+            </div>
           </div>
+            <CustomTabs />
+          
         </div>
       )}
     </div>

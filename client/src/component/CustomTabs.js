@@ -1,7 +1,10 @@
-import { Tabs, Tooltip } from 'antd';
+import { Tabs, Tooltip,Select } from 'antd';
+import { useState } from 'react';
 const CustomTabs=()=>{
-
-
+const [waypoint,setWaypoint]=useState(1);
+const handleChange=(value)=>{
+  setWaypoint(value);
+}
     return(
   <Tabs
   centered
@@ -18,7 +21,30 @@ const CustomTabs=()=>{
         </Tooltip>
       ),
       key: '1',
-      children: <div></div>,
+      children: 
+      <div>
+        <Select
+        defaultValue="1 tuyến"
+        style={{
+          width: 120,
+        }}
+        onChange={handleChange}
+        options={[
+          {
+          value: '1',
+          label: '1 tuyến',
+        },
+        {
+          value: '2',
+          label: '2 tuyến',
+        },
+        {
+          value: '3',
+          label: '3 tuyến',
+        }
+        ]}
+        />
+      </div>,
     },
     {
       label: (

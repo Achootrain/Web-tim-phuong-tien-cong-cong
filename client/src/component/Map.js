@@ -22,18 +22,17 @@ const MapComponent = ({ onLoad,locate_user ,from_coord,to_coord}) => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [from, setFrom] = useState({});
   const [to, setTo] = useState({});
-
+  console.log(from_coord)
   useEffect(() => {
     goongjs.accessToken = process.env.REACT_APP_GOONG_MAP_ACCESS_TOKEN;
 
     map.current = new goongjs.Map({
       container: mapContainer.current,
       style: "https://tiles.goong.io/assets/goong_map_web.json",
-      center: [105.83639558900006, 20.988928921000024], // Example: Hanoi
+      center: [105.83639558900006, 20.988928921000024], 
       zoom: 17,
     });
 
-    // When the map fully loads, update state
     map.current.on("load", () => {
       setMapLoaded(true);
       if (onLoad) onLoad(); // Notify parent component
@@ -43,7 +42,7 @@ const MapComponent = ({ onLoad,locate_user ,from_coord,to_coord}) => {
         map.current.remove();
       }
     };
-  }, []);
+  }, [onLoad]);
   useEffect(()=>{
     if(locate_user){
       getLocation()
@@ -62,8 +61,22 @@ const MapComponent = ({ onLoad,locate_user ,from_coord,to_coord}) => {
     }
     if(to_coord){
       new goongjs.Marker({color:'red'}).setLngLat(to_coord).addTo(map.current);
-
       map.current.setCenter(to_coord);
+    }
+    if(from_coord&&to_coord){
+      const centerPoint = [
+        (from_coord.lng + to_coord.lng) / 2,
+        (from_coord.lat + to_coord.lat) / 2
+      ];
+     
+      const distance = Math.sqrt(
+        Math.pow(to_coord.lat - from_coord.lat, 2) +
+        Math.pow(to_coord.lng - from_coord.lng, 2)
+      );
+
+      const zoomLevel = Math.max(5, 15 - Math.log2(distance * 100));
+      map.current.setCenter(centerPoint);
+      map.current.setZoom(zoomLevel);
     }
   },[from_coord,to_coord])
  
