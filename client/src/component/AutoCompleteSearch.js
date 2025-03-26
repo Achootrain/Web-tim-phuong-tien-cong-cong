@@ -9,7 +9,7 @@ const debounce = (func, delay) => {
     timer = setTimeout(() => func(...args), delay);
   };
 };
-const SearchAutocomplete = ({ placeholder = "Type something...", width = 300, setCoordinate }) => {
+const SearchAutocomplete = ({ placeholder = "Type something...", width = 300, setCoordinate ,setList}) => {
   const [options, setOptions] = useState([]);
   const [searchValue, setSearchValue] = useState('');
 
@@ -43,17 +43,30 @@ const SearchAutocomplete = ({ placeholder = "Type something...", width = 300, se
     }, 600),
     []
   );
+  
+  const fetchBusList=async(Lat,Long)=>{
+    const response=await axios.get(`http://localhost:3001/Find/bus?lat=${Lat}&lng=${Long}`);
+    return response.data;
+  }
+
 
   const handleSearchButton =async () => {
     if (!searchValue) return;
     const coor=await fetchCoordinates(searchValue);
-    
+    const busList=await fetchBusList(coor[0].lat,coor[0].lng);
+    setList(busList);
     setCoordinate(coor[0]);
+
   };
+
+  
   const handleSelect=async (value)=>{
     const coor=await fetchCoordinates(value);
+    const busList=await fetchBusList(coor[0].lat,coor[0].lng);
+    setList(busList);
     setCoordinate(coor[0]);
   }
+
   return (
     <Space.Compact style={{ width }}>
       <AutoComplete

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "../App.css";
 import CustomTabs from "./CustomTabs";
 import axios from "axios";
@@ -15,10 +15,13 @@ const Sidebar = ({ open }) => {
   const [fromCoords, setFromCoords] = useState(null);
   const [toCoords, setToCoords] = useState(null);
 
-
+  const [busListFrom,setBusListFrom]=useState(null);
+  const [busListTo,setBusListTo]=useState(null);
+  
   return (
     <div className="relative">
-      <MapComponent locate_user={getUserLocation} onLoad={() => setMapReady(true)} from_coord={fromCoords} to_coord={toCoords} />
+      <MapComponent locate_user={getUserLocation} onLoad={() => setMapReady(true)} 
+      from_coord={fromCoords} to_coord={toCoords} fromBusList={busListFrom} toBusList={busListTo}/>
       {/* Make sure the map fully render */}
       {mapReady && (
         <div
@@ -35,13 +38,13 @@ const Sidebar = ({ open }) => {
         >
           <div className="flex flex-col gap-2 p-4">
             <div>
-              <AutoCompleteSearch placeholder="Chọn điểm bắt đầu" setCoordinate={setFromCoords}/>
+              <AutoCompleteSearch placeholder="Chọn điểm bắt đầu" setCoordinate={setFromCoords} setList={setBusListFrom}/>
               <Tooltip title="Chọn vị trí của bạn" placement="top">
                 <button onClick={() => setUserLocation(true)}><img src="https://i.imgur.com/s3OX5uw.png" className="w-6 h-6 relative top-1"></img></button>  
               </Tooltip>
             </div>
             <div>
-              <AutoCompleteSearch placeholder="Chọn đích đến" setCoordinate={setToCoords}/>
+              <AutoCompleteSearch placeholder="Chọn đích đến" setCoordinate={setToCoords} setList={setBusListTo}/>
               <Tooltip title="Chỉ đường" placement="top">
                 <button><img src="https://i.imgur.com/BXJ2wwe_d.png?maxwidth=520&shape=thumb&fidelity=high" className="w-6 h-6 relative top-1"></img></button>  
               </Tooltip>

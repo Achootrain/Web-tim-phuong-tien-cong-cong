@@ -1,5 +1,6 @@
 import goongjs from "@goongmaps/goong-js";
 import { useEffect, useRef, useState } from "react";
+import axios from "axios";
 function getLocation() {
   return new Promise((resolve, reject) => {
     if (navigator.geolocation) {
@@ -16,13 +17,11 @@ function getLocation() {
     }
   });
 }
-const MapComponent = ({ onLoad,locate_user ,from_coord,to_coord}) => {
+const MapComponent = ({ onLoad,locate_user ,from_coord,to_coord,fromBusList,toBusList}) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [from, setFrom] = useState({});
-  const [to, setTo] = useState({});
-  console.log(from_coord)
+
   useEffect(() => {
     goongjs.accessToken = process.env.REACT_APP_GOONG_MAP_ACCESS_TOKEN;
 
@@ -37,6 +36,7 @@ const MapComponent = ({ onLoad,locate_user ,from_coord,to_coord}) => {
       setMapLoaded(true);
       if (onLoad) onLoad(); // Notify parent component
     });
+   
     return () => {
       if (map.current) {
         map.current.remove();
@@ -58,10 +58,32 @@ const MapComponent = ({ onLoad,locate_user ,from_coord,to_coord}) => {
     if(from_coord){
       new goongjs.Marker({color:'blue'}).setLngLat(from_coord).addTo(map.current);
       map.current.setCenter(from_coord);
+      fromBusList.forEach((stop) => {
+        const marker = new goongjs.Marker({ color: "green" })
+          .setLngLat([stop.long, stop.lat])
+          .setPopup(
+            new goongjs.Popup().setHTML(
+              `<strong>${stop.name}</strong><br/>Tuyến: ${stop.buses.join(", ")}`
+            )
+          )
+          .addTo(map.current);
+      });
+    
+        
     }
     if(to_coord){
       new goongjs.Marker({color:'red'}).setLngLat(to_coord).addTo(map.current);
       map.current.setCenter(to_coord);
+      toBusList.forEach((stop) => {
+        const marker = new goongjs.Marker({ color: "green" })
+          .setLngLat([stop.long, stop.lat])
+          .setPopup(
+            new goongjs.Popup().setHTML(
+              `<strong>${stop.name}</strong><br/>Tuyến: ${stop.buses.join(", ")}`
+            )
+          )
+          .addTo(map.current);
+      });
     }
     if(from_coord&&to_coord){
       const centerPoint = [
@@ -78,8 +100,9 @@ const MapComponent = ({ onLoad,locate_user ,from_coord,to_coord}) => {
       map.current.setCenter(centerPoint);
       map.current.setZoom(zoomLevel);
     }
-  },[from_coord,to_coord])
  
+  },[from_coord,to_coord])
+  
   return (
     <div ref={mapContainer} className="fixed inset-0 w-screen h-screen z-0" />
   );

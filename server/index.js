@@ -31,6 +31,8 @@ app.use('/Map', mapRouters);
 const usersRouters = require('./routes/Users');
 app.use('/Users', usersRouters);
 
+const findRouters = require('./routes/Find');
+app.use('/Find', findRouters);
 
 
 // Khởi động server

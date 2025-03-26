@@ -1,6 +1,8 @@
 client/node_modules/
 server/node_modules/
-server/data/
+server/data/BusRoutes.json
+server/data/BusStations.json
+server/data/importData.js
 .env
 dist/
 build/
