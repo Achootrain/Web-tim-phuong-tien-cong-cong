@@ -1,8 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const { importData } = require('./data/importData');
-const Station = require('./models/BusStation'); // Thêm để kiểm tra dữ liệu
+const { importData } = require('./function/importData');
 
 const app = express();
 app.use(cors());
@@ -12,15 +11,8 @@ app.use(express.json());
 mongoose.connect('mongodb://localhost:27017/mydtb')
   .then(async () => {
     console.log('✅ Kết nối MongoDB thành công');
-
-    // Kiểm tra nếu collection trống thì import
-    const count = await Station.countDocuments();
-    if (count === 0) {
-      console.log('Chưa có dữ liệu, bắt đầu import...');
-      await importData();
-    } else {
-      console.log('Dữ liệu đã có sẵn, không cần import.');
-    }
+    importData();
+    
   })
   .catch((err) => console.error('Lỗi kết nối MongoDB:', err));
 

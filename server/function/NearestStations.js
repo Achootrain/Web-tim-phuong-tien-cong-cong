@@ -1,12 +1,13 @@
 const fs = require('fs');
 
 class Node {
-    constructor(id, lat, long, name, buses) {
+    constructor(id, lat, lng, name,address) {
         this.id = id;
         this.lat = lat;
-        this.long = long;
+        this.lng = lng;
         this.name = name;
-        this.buses = buses;
+        this.address = address;
+       
         this.left = null;
         this.right = null;
     }
@@ -36,15 +37,16 @@ function buildKNNKdTree(points, depth = 0) {
     if (points.length === 0) return null;
 
     let axis = depth % 2;
-    points.sort((a, b) => (axis === 0 ? a.lat - b.lat : a.long - b.long));
+    points.sort((a, b) => (axis === 0 ? a.lat - b.lat : a.lng - b.lng));
 
     let median = Math.floor(points.length / 2);
     let node = new Node(
-        points[median]._id,
+        points[median].stationId,
         points[median].lat,
-        points[median].long,
-        points[median].name,
-        points[median].buses
+        points[median].lng,
+        points[median].stationName,
+        points[median].stationAddress
+       
     );
     node.left = buildKNNKdTree(points.slice(0, median), depth + 1);
     node.right = buildKNNKdTree(points.slice(median + 1), depth + 1);
@@ -56,10 +58,10 @@ function findKNearestNeighbors(root, testPoint, k, depth = 0, nearest = []) {
     if (!root) return nearest;
 
     let axis = depth % 2;
-    let pointCoord = axis === 0 ? testPoint.lat : testPoint.long;
-    let rootCoord = axis === 0 ? root.lat : root.long;
+    let pointCoord = axis === 0 ? testPoint.lat : testPoint.lng;
+    let rootCoord = axis === 0 ? root.lat : root.lng;
 
-    let currentDistance = distanceSquare(root.lat, root.long, testPoint.lat, testPoint.long);
+    let currentDistance = distanceSquare(root.lat, root.lng, testPoint.lat, testPoint.lng);
 
     nearest.push({ node: root, dist: currentDistance });
     nearest.sort((a, b) => a.dist - b.dist);
@@ -79,24 +81,24 @@ function findKNearestNeighbors(root, testPoint, k, depth = 0, nearest = []) {
 }
 
 // Main function
-function getNearestBusStations(lat, long) {
-const testPoint = { lat, long };
+function getNearestBusStations(lat, lng) {
+const testPoint = { lat, lng };
 const rawData = fs.readFileSync('./data/BusStations.json');
 const points = JSON.parse(rawData);
 
 let tree = buildKNNKdTree(points);
-let k = 6;
+let k = 5;
 
 let nearestNeighbors = findKNearestNeighbors(tree, testPoint, k);
 for (let neighbor of nearestNeighbors) {
-    neighbor.dist = haversine(testPoint.lat, testPoint.long, neighbor.node.lat, neighbor.node.long);
+    neighbor.dist = haversine(testPoint.lat, testPoint.lng, neighbor.node.lat, neighbor.node.lng);
 }
 return nearestNeighbors.map(neighbor => ({
     id: neighbor.node.id,
     name: neighbor.node.name,
+    address: neighbor.node.address,
     lat: neighbor.node.lat,
-    long: neighbor.node.long,
-    buses: neighbor.node.buses,
+    lng: neighbor.node.lng,
     distance: neighbor.dist 
 }))
 }

@@ -1,11 +1,26 @@
 const mongoose = require('mongoose');
-const BusStationSchema = new mongoose.Schema({
-    _id: mongoose.Schema.Types.ObjectId,
-    name: String,
-    buses: [String],
-    lat: Number,
-    long: Number
-  });
-  
-module.exports = mongoose.model('BusStations', BusStationSchema);
+const BusStationsSchema = new mongoose.Schema({
+  stationId: {
+      type: Number,
+      required: true,
+      unique: true
+  },
+  stationName: {
+      type: String,
+      required: true
+  },
+  stationAddress: {
+      type: String,
+      required: false
+  },
+  lat: {
+      type: Number,
+      required: true
+  },
+  lng: {
+      type: Number,
+      required: true
+  }
+}, {_id:false, timestamps: false });
 
+module.exports = mongoose.model('BusStations', BusStationsSchema);

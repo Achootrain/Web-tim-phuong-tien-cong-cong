@@ -1,13 +1,20 @@
 const mongoose = require('mongoose');
+const BusRoutesSchema = new mongoose.Schema({
+  id: {
+      type: Number,
+      required: true,
+      unique: true
+  },
+  name: {
+      type: String,
+      required: true
+  },
+  routeId: {
+    type: Number,
+    required: true,
+    unique: true
+  },
 
-const busRoutesSchema = new mongoose.Schema({
-  bus: { type: String, required: true },
-  price: { type: Number, required: true },
-  activityTime: { type: String, required: true },
-  gianCachChayXe: { type: String, required: true },
-  gianCachTrungBinh: { type: Number, required: true },
-  chieuDi: [{ type: String }],
-  chieuVe: [{ type: String }]
-});
+}, { _id: false,timestamps: false });
 
-module.exports = mongoose.model('BusRoutes', busRoutesSchema);
+module.exports = mongoose.model('BusRoutes', BusRoutesSchema);

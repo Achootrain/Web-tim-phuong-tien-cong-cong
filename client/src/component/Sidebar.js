@@ -17,11 +17,23 @@ const Sidebar = ({ open }) => {
 
   const [busListFrom,setBusListFrom]=useState(null);
   const [busListTo,setBusListTo]=useState(null);
+  const [path, setPath] = useState(null);
+  const handleDirection = async () => {
+    if (!busListFrom || !busListTo) return;
+    
+    const start = busListFrom.map(station => station.id).join(',');
+    const end = busListTo.map(station => station.id).join(',');
+    
+    const response = await axios.get(`http://localhost:3001/Find/bus/route?start=${start}&end=${end}`);
+    const data = response.data;
+    setPath(data);
+  };
+  const [pathChosen,setPathChosen]=useState(0);
   
   return (
     <div className="relative">
       <MapComponent locate_user={getUserLocation} onLoad={() => setMapReady(true)} 
-      from_coord={fromCoords} to_coord={toCoords} fromBusList={busListFrom} toBusList={busListTo}/>
+      from_coord={fromCoords} to_coord={toCoords} fromBusList={busListFrom} toBusList={busListTo} path={path} pathChosen={pathChosen}/>
       {/* Make sure the map fully render */}
       {mapReady && (
         <div
@@ -46,11 +58,11 @@ const Sidebar = ({ open }) => {
             <div>
               <AutoCompleteSearch placeholder="Chọn đích đến" setCoordinate={setToCoords} setList={setBusListTo}/>
               <Tooltip title="Chỉ đường" placement="top">
-                <button><img src="https://i.imgur.com/BXJ2wwe_d.png?maxwidth=520&shape=thumb&fidelity=high" className="w-6 h-6 relative top-1"></img></button>  
+                <button onClick={handleDirection}><img src="https://i.imgur.com/BXJ2wwe_d.png?maxwidth=520&shape=thumb&fidelity=high" className="w-6 h-6 relative top-1"></img></button>  
               </Tooltip>
             </div>
           </div>
-            <CustomTabs />
+            <CustomTabs pathdata={path} pathChosen={setPathChosen}/>
           
         </div>
       )}

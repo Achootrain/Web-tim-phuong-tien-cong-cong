@@ -1,10 +1,37 @@
 import { Tabs, Tooltip,Select } from 'antd';
-import { useState } from 'react';
-const CustomTabs=()=>{
-const [waypoint,setWaypoint]=useState(1);
-const handleChange=(value)=>{
-  setWaypoint(value);
-}
+import { use, useEffect, useState } from 'react';
+import Coll from './Collapse';
+const CustomTabs=({pathdata,pathChosen})=>{
+  const [busRoutes, setBusRoutes] = useState([]);
+  useEffect(() => {
+    if(pathdata){
+      const extractedData = pathdata.map((path, index) => {
+        const stations = path.passed.map((entry) => ({
+          id: entry.station.stationId,
+          name: entry.station.stationName,
+          address: entry.station.stationAddress || "", // Default to empty string if null/undefined
+          route: entry.route
+        }));
+    
+        const routeDetails = path.routes && Array.isArray(path.routes)
+          ? path.routes.map(route => ({
+              id: route.id,
+              name: route.name
+            }))
+          : [];
+    
+       
+        
+        return {
+          route: routeDetails, // Array of objects with id and name from routes property
+          station: stations,   // Array of station objects
+          routeChanges: path.routeChanges  // Number of route changes
+        };
+      });
+      setBusRoutes(extractedData);
+    }
+  }, [pathdata]);
+
     return(
   <Tabs
   centered
@@ -21,30 +48,19 @@ const handleChange=(value)=>{
         </Tooltip>
       ),
       key: '1',
-      children: 
-      <div>
-        <Select
-        defaultValue="1 tuyến"
-        style={{
-          width: 120,
-        }}
-        onChange={handleChange}
-        options={[
-          {
-          value: '1',
-          label: '1 tuyến',
-        },
-        {
-          value: '2',
-          label: '2 tuyến',
-        },
-        {
-          value: '3',
-          label: '3 tuyến',
-        }
-        ]}
-        />
-      </div>,
+      children:
+      <div className='flex flex-col gap-y-4 bg-white p-4 rounded-md'>
+        <div className="flex flex-col gap-y-4 ">
+        {busRoutes&&busRoutes.map((route, index) => (
+         <div key={index} className="w-full flex flex-col overflow-auto "> 
+          <button onClick={()=>pathChosen(index)}>
+            <Coll path={route} index={index} />
+          </button>
+        </div>
+        ))}
+      </div>
+      </div>
+      
     },
     {
       label: (
