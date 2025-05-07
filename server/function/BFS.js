@@ -1,6 +1,8 @@
 const fs = require('fs');
 const graph = readGraphData();
 const stationMap = readStationMapData();
+const limitRouteChanges=4;
+
 
 function readGraphData() {
   try {
@@ -21,71 +23,77 @@ function readStationMapData() {
   }
 }
 
-function findPath(startStations, endStations) {
+function findPath(startStations, endStations,walking) {
   if (!graph || !stationMap) {
     console.error("Invalid graph or station map data.");
     return null;
   }
 
-  const queue = startStations.map(station => [station, [{ passed: station, route: null, pathPoints: null }], 0, null]);
+  const queue = startStations.map(station => [station, [{ passed: station, route: null, pathPoints: null }], 0, []]);
   const visited = new Set();
-  const results = []; // Use Map to store one path per routeChanges value (0, 1, 2)
+  const results = []; 
   const allEndStationInfos = endStations.flatMap(endStation =>
     (stationMap[endStation] || []).map(info => ({
       ...info,
       endStation 
     }))
   );
-  
+  const routeUsed = new Set(); // Track used routes
+  const endStationUsed = new Set(); // Track used end stations
 
-  
   while (queue.length > 0) {
     const [currentStation, pathArray, routeChanges, routeChosen] = queue.shift();
     const visitKey = currentStation;
-    if(results.length>5){return results;}
     if (visited.has(visitKey)) continue;
     visited.add(visitKey);
-    const prev = pathArray.length > 1 ? pathArray[pathArray.length - 2] : null;
-    const newrouteChanges = (prev!==null&&routeChosen !== null && routeChosen !== prev.route&&prev.route!==null)? routeChanges + 1: routeChanges;
+    if (routeChanges === limitRouteChanges) continue;
    
+    const prev = routeChosen[routeChosen.length - 1]||null;
     const currentStationInfo = stationMap[currentStation];
-  
-    //node ./function/BFS.js
-    // Direct route check
+    
+    let leap=0;
+    //check direct route to end stations
     for(const info of allEndStationInfos){
       for(const currentRoute of currentStationInfo) {
             if (currentRoute.routeId === info.routeId &&(currentRoute.stationDirection <= info.stationDirection)
               &&currentRoute.stationOrder <= info.stationOrder) {
-             // if end station is not used yet, we can use it
+              leap=1;
+             
               let curr = currentStation;
               const end = info.endStation;
+           
+             
               const res = [...pathArray];
               const visitedset = new Set();
-             
+                 
+              let loop=0;
               while (curr !== end) {
-                const nextStation = graph[curr].nextStation.find(station => (!visitedset.has(station.stationId)&&station.routeId===currentRoute.routeId));
+                const nextStation = graph[curr].nextStation.find(station => (!visitedset.has(station.stationId)&&station.routeId===currentRoute.routeId));              
                 visitedset.add(curr);
-                visited.add(curr);
-
-                if (!nextStation) break;
+                if (!nextStation) {loop=1;break;}
                 curr = nextStation.stationId;
                 res.push({ passed: curr, route: currentRoute.routeId, pathPoints: nextStation.pathPoints });
               }
-            
-              const result = { passed: res,routeChanges:prev?newrouteChanges+1:newrouteChanges};
-              results.push(result);
-              break
+
+              const result = { passed: res,routeChanges: routeChanges + (prev === info.routeId||prev===null||prev===-1 ? 0 : 1)};
+              if(loop==0){
+              results.push(result);}
+
+              break;
             }
-      }
-      }     
+         }
+         if(leap==1){break;}
+     }     
+     if(leap==1) continue; //if direct route found, skip to next iteration
   
 
     let nextStations = graph[currentStation]?.nextStation || [];
     nextStations.sort((a, b) => {
-      const aPriority = a.routeId === routeChosen ? 0 : 1;
-      const bPriority = b.routeId === routeChosen ? 0 : 1;
+      const aPriority = a.routeId === prev ? 0 : 1;
+      const bPriority = b.routeId === prev ? 0 : 1;
       return aPriority - bPriority;
     });
+    
 
     for (const { stationId: nextStation, routeId: nextRouteId, pathPoints: points } of nextStations) {
       const nextVisitKey = nextStation;
@@ -94,17 +102,40 @@ function findPath(startStations, endStations) {
         queue.push([
           nextStation,
           [...pathArray, { passed: nextStation, route: nextRouteId, pathPoints: points }],
-          newrouteChanges,
-          nextRouteId
+          routeChanges + (prev === nextRouteId||prev===null||prev===-1 ? 0 : 1),
+          [...routeChosen,nextRouteId]
         ]);
-
     }
+    if(walking){
+      const walkingStations = graph[currentStation]?.walkingStation || [];
+      for (const { stationId: nextStation, pathPoints: points } of walkingStations) {
+        const nextVisitKey = nextStation;
+        const nextRouteId = -1; // Walking route ID is -1
+        if (visited.has(nextVisitKey)) continue;
+        queue.push([
+          nextStation,
+          [...pathArray, { passed: nextStation, route: -1, pathPoints: points }],
+          routeChanges+ 1,
+          [...routeChosen,-1]
+        ]);
+      }
+    }
+    
   }
-  return results;
-}
-function refine(data) {
 
-  const sortedData = data.sort((a, b) => a.routeChanges - b.routeChanges).slice(0, 5);
+  return results;
+
+}
+
+
+
+function refine(data) {
+  const sortedData = data.sort((a, b) => {
+    if (a.routeChanges !== b.routeChanges) {
+      return a.routeChanges - b.routeChanges;
+    }
+    return a.passed.length - b.passed.length;
+  }).slice(0, 5);
 
   return sortedData.map(path => {
     let pathPoints = [];
@@ -154,16 +185,17 @@ function refine(data) {
     }
 
     return {
-      pathPoints,
       routes,
       routeChanges: path.routeChanges,
-      passedRoutePairs
+      passedRoutePairs,
+      pathPoints
+  
     };
   });
 }
 
-function getPaths(startStations, endStations) {
-  const paths = findPath(startStations, endStations);
+function BFSMultiStartEnd(startStations, endStations,walking=true) {
+  const paths = findPath(startStations, endStations,walking);
   if (paths) {
     return refine(paths);
   } else {
@@ -171,20 +203,23 @@ function getPaths(startStations, endStations) {
   }
 }
 
-// const startStations = [2092,2090,4947,4946,100,98,160,167,101]
-// const endStations=[769,770,1073,1074,58785,3216,855,856,857] 
-// const paths = getPaths(startStations, endStations);
+
+// const startStations = [2092,2090,4947,4946,100,98,160]
+// const endStations=[6220,2137,2112,604,580,6611,581,242]
+
+
+// const paths = BFSMultiStartEnd(startStations, endStations);
 // const data=JSON.stringify(paths, null, 2);
-// console.log(data);
+
 // fs.writeFileSync('./data/paths.json', data, 'utf8', (err) => {
 //   if (err) throw err;
 //   console.log('Data written to file');
 // })
 
-// node ./function/BFS.js
+//node ./function/BFS.js
 
 
 
-module.exports = getPaths;
+module.exports = BFSMultiStartEnd;
 
 

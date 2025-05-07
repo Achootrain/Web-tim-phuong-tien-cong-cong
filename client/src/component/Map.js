@@ -171,7 +171,7 @@ const MapComponent = ({ onLoad,locate_user ,from_coord,to_coord,fromBusList,toBu
   },[from_coord,to_coord,path,pathChosen])
  
   return (
-    <div ref={mapContainer} className="fixed inset-0 w-screen h-screen z-0" />
+    <div ref={mapContainer} className="w-full h-full absolute inset-0" />
   );
 };
 

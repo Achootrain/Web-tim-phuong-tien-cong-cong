@@ -81,27 +81,34 @@ function findKNearestNeighbors(root, testPoint, k, depth = 0, nearest = []) {
 }
 
 // Main function
-function getNearestBusStations(lat, lng) {
-const testPoint = { lat, lng };
 const rawData = fs.readFileSync('./data/BusStations.json');
 const points = JSON.parse(rawData);
-
 let tree = buildKNNKdTree(points);
-let k = 5;
 
-let nearestNeighbors = findKNearestNeighbors(tree, testPoint, k);
-for (let neighbor of nearestNeighbors) {
-    neighbor.dist = haversine(testPoint.lat, testPoint.lng, neighbor.node.lat, neighbor.node.lng);
-}
-return nearestNeighbors.map(neighbor => ({
-    id: neighbor.node.id,
-    name: neighbor.node.name,
-    address: neighbor.node.address,
-    lat: neighbor.node.lat,
-    lng: neighbor.node.lng,
-    distance: neighbor.dist 
-}))
-}
+function getNearestBusStations(lat, lng,k=8) {
+    const testPoint = { lat, lng };
+  
+  
+    let nearestNeighbors = findKNearestNeighbors(tree, testPoint, k);
+  
+    // Tính khoảng cách
+    for (let neighbor of nearestNeighbors) {
+      neighbor.dist = haversine(testPoint.lat, testPoint.lng, neighbor.node.lat, neighbor.node.lng);
+    }
+  
+    // Chỉ giữ lại những trạm có distance <= 0.5 km
+    return nearestNeighbors
+      .filter(neighbor => neighbor.dist <= 0.5)
+      .map(neighbor => ({
+        id: neighbor.node.id,
+        name: neighbor.node.name,
+        address: neighbor.node.address,
+        lat: neighbor.node.lat,
+        lng: neighbor.node.lng,
+        distance: neighbor.dist 
+      }));
+  }
+  
 
 
-module.exports = getNearestBusStations;
+module.exports = {getNearestBusStations,haversine};
