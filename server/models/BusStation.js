@@ -20,7 +20,11 @@ const BusStationsSchema = new mongoose.Schema({
   lng: {
       type: Number,
       required: true
-  }
+  },
+    stationType: {
+        type: Number,
+        required: true
+    },
 }, {_id:false, timestamps: false });
 
 module.exports = mongoose.model('BusStations', BusStationsSchema);

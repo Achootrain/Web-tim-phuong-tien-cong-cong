@@ -1,12 +1,14 @@
 const fs = require('fs');
 
 class Node {
-    constructor(id, lat, lng, name,address) {
+    constructor(id, lat, lng, name,address,type) {
         this.id = id;
         this.lat = lat;
         this.lng = lng;
         this.name = name;
         this.address = address;
+        this.type = type;
+
        
         this.left = null;
         this.right = null;
@@ -45,7 +47,8 @@ function buildKNNKdTree(points, depth = 0) {
         points[median].lat,
         points[median].lng,
         points[median].stationName,
-        points[median].stationAddress
+        points[median].stationAddress,
+        points[median].stationType
        
     );
     node.left = buildKNNKdTree(points.slice(0, median), depth + 1);
@@ -105,7 +108,8 @@ function getNearestBusStations(lat, lng,k=8) {
         address: neighbor.node.address,
         lat: neighbor.node.lat,
         lng: neighbor.node.lng,
-        distance: neighbor.dist 
+        distance: neighbor.dist,
+        type: neighbor.node.type, 
       }));
   }
   

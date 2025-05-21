@@ -3,38 +3,23 @@ const router = express.Router();
 const BusStations = require('../models/BusStation');
 const BusRoutes = require('../models/BusRoute');
 
-const {getNearestBusStations} = require('../function/NearestStations');
-const BFSMultiStartEnd = require('../function/BFS');
-const dijkstraMultiStartEnd = require('../function/Djikstra')
 
+const findKroute = require('../function/Djikstra')
 
-// get nearest bus stations based on latitude and longitude
-router.get('/bus', async (req, res) => {
-const {lat,lng}=req.query;
-if (!lat || !lng) {
-return res.status(400).json({ error: "Latitude and Longitude parameters are required" });
-}
-const nearestStation=getNearestBusStations(lat,lng);
-res.json(nearestStation);
-});
 
 // find path between two bus stations
 router.get('/bus/route', async (req, res) => {
-  let { start, end, mode, walking } = req.query;
+  let { start, end, mode, walking,metro } = req.query;
 
-  const startIds = start ? start.split(',').map(id => parseInt(id)) : [];
-  const endIds = end ? end.split(',').map(id => parseInt(id)) : [];
+  start = JSON.parse(start);
+  end = JSON.parse(end);
 
-  // Ép kiểu đúng
-  mode = parseInt(mode);
-  walking = walking === 'true';
+    // Ép kiểu đúng
+    mode = parseInt(mode); 
+    walking = walking === 'true';
+    metro = metro === 'true';
 
-  let result = [];
-  if (mode === 1) {
-    result = BFSMultiStartEnd(startIds, endIds, walking);
-  } else if (mode === 2) {
-    result = dijkstraMultiStartEnd(startIds, endIds, walking);
-  }
+  const result = findKroute(start, end, 3, walking, metro, mode);
 
   const finalresult = [];
   for (const part of result) {
@@ -44,14 +29,22 @@ router.get('/bus/route', async (req, res) => {
     const stationList = await BusStations.find({ stationId: { $in: stationIds } });
     const stationMap = Object.fromEntries(stationList.map(st => [st.stationId, st]));
 
-    rs.passed = part.passedRoutePairs.map(pair => ({
-      station: stationMap[pair.passed],
-      route: pair.routeId,
-    }));
+    // Skip the first and last elements of passedRoutePairs
+    rs.passed = part.passedRoutePairs && part.passedRoutePairs.length > 2
+      ? part.passedRoutePairs
+          .slice(1, -1) // Skip first and last elements
+          .filter(pair => stationMap[pair.passed]) // Ensure valid station
+          .map(pair => ({
+            station: stationMap[pair.passed],
+            route: pair.routeId,
+          }))
+      : [];
 
     rs.pathPoints = part.pathPoints;
     rs.routes = await BusRoutes.find({ routeId: { $in: part.routes } });
     rs.routeChanges = part.routeChanges;
+    rs.time = part.time;
+    rs.distance = part.distance;
 
     finalresult.push(rs);
   }

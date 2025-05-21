@@ -29,12 +29,14 @@ const graph = {};
 busRoutes.forEach(route => {
   route.stations.forEach((station, index) => {
     if (!graph[station.stationId]) {
-      graph[station.stationId] = { nextStation:[] };
+      graph[station.stationId] = { lat:station.lat,lng:station.lng,nextStation:[] };
       const walkingStation = getNearestBusStations(station.lat, station.lng);
       graph[station.stationId].walkingStation = walkingStation.map(walkingStation => ({
         stationId: walkingStation.id,
         distance:walkingStation.distance,
         pathPoints: `${station.lng},${station.lat} ${walkingStation.lng},${walkingStation.lat}`,
+        routeId:-1,
+        type:walkingStation.type,
       }));
     }
 
@@ -51,7 +53,8 @@ busRoutes.forEach(route => {
             stationId: nextStation.stationId,
             routeId: nextStation.routeId,
             pathPoints: path,
-            distance:computePathDistance(path)
+            distance:computePathDistance(path),
+            type:nextStation.stationType,
         });
     }
   });
@@ -84,8 +87,6 @@ busRoutes.forEach(route => {
       stationMap[station.stationId] = [];
     }
 
-   
-   
       stationMap[station.stationId].push(stationData);
     
   });
