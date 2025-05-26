@@ -14,6 +14,7 @@ const BusRoutesSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  
 
 }, { _id: false,timestamps: false });
 

@@ -108,8 +108,6 @@ const MapComponent = ({ onLoad,locate_user ,from_coord,to_coord,path,pathChosen}
           .setPopup(
             new goongjs.Popup().setHTML(`
               <div style="font-family: Arial, sans-serif; font-size: 13px; line-height: 1.4;">
-                <div><strong>Trạm số:</strong> ${stop.station.stationId || 'N/A'}</div>
-                <div><strong>${stop.route===-1?'Đi bộ':'Tuyến số'}</strong> ${stop.route===-1?'':stop.route || 'N/A'}</div>
                 <div><strong>${stop.station.stationName || 'Unknown'}</strong></div>
                 <div>${stop.station.stationAddress || ''}</div>
               </div>

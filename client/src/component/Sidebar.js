@@ -43,18 +43,18 @@ const Sidebar = () => {
       const response = await axios.get(url);
       const pathData = response.data;
       setPath(pathData);
-
+      console.log("pathData:",pathData)
       if (pathData && pathData.length > 0) {
         const extractedData = pathData.map((path, index) => {
           const stations = path.passed.map((entry) => ({
             id: entry.station.stationId ?? -1,
             name: entry.station.stationName ?? "Start",
             address: entry.station.stationAddress ?? "",
-            route: entry.route,
+            route: entry.route
           }));
           const routeDetails = path.routes && Array.isArray(path.routes)
             ? path.routes.map(route => ({
-                id: route.id ?? -1,
+                id: route.routeId ?? -1,
                 name: route.name ?? "Unknown",
               }))
             : [];
@@ -67,7 +67,6 @@ const Sidebar = () => {
           };
         });
         setBusRoutes(extractedData);
-        console.log("Dữ liệu đã được trích xuất:", extractedData);
       }
     } catch (error) {
       console.error("Lỗi khi gọi API:", error);
@@ -315,7 +314,7 @@ const Sidebar = () => {
                         index === 0 || // luôn hiển thị điểm đầu
                         index === stations.length - 1 || // luôn hiển thị điểm cuối
                         station.route !== stations[index - 1]?.route; // khác tuyến so với trạm trước
-
+                        const routeName = busRoutes[expandedRouteIndex].route.find(route => route.id === station.route)?.name || '';
                       if (!isTransferPoint) return null;
 
                       return (
@@ -329,13 +328,11 @@ const Sidebar = () => {
                             </div>
                             <div className="flex-1 border border-gray-200 rounded-lg p-3 bg-white shadow-sm">
                               <div className="mb-1">
-                                <p className="font-medium text-sm">
-                                  {station.name}
-                                  {station.id !== -1 && (
-                                    <span className="text-gray-500 ml-1">#{station.id}</span>
-                                  )}
-                                </p>
-                                <div className="flex items-center mt-2">
+                                
+                                <p className="text-sm font-medium ">{routeName}</p>
+
+
+                                <div className="flex items-center mt-2 ">
                                   <span
                                     className={`text-xs px-2 py-1 rounded mr-2 whitespace-nowrap font-medium ${
                                       station.route === -1
@@ -348,12 +345,15 @@ const Sidebar = () => {
                                     {station.route === -1
                                       ? '🚶 Đi bộ'
                                       : station.route === 2068 || station.route === 974
-                                      ? '🚇 Tàu metro ' + station.route
-                                      : '🚌 Xe buýt ' + station.route}
+                                      ? '🚇 Tàu metro '
+                                      : '🚌 Xe buýt ' }
                                   </span>
                                 </div>
-                                {station.address && (
-                                  <p className="text-xs text-gray-500 mt-1">{station.address}</p>
+                                <p className="font-medium text-sm">
+                                  📍{station.name}             
+                                </p>
+                                  {station.address && (
+                                  <p className="text-xs text-gray-500 mt-1 ml-5">{station.address}</p>
                                 )}
                               </div>
                             </div>

@@ -37,8 +37,7 @@ const importData = async () => {
                 };
             }   );
             await BusRoutes.insertMany(data);
-            console.log('✅ BusRoutes imported successfully!');
-        }
+            console.log('✅ BusRoutes imported successfully!');}
 
   } catch (error) {
       console.error('⛔ Lỗi import dữ liệu:', error);
