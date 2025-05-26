@@ -20,8 +20,6 @@ mongoose.connect('mongodb://localhost:27017/mydtb')
 const mapRouters = require('./routes/Map');
 app.use('/Map', mapRouters);
 
-const usersRouters = require('./routes/Users');
-app.use('/Users', usersRouters);
 
 const findRouters = require('./routes/Find');
 app.use('/Find', findRouters);

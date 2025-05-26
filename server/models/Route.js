@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const BusRoutesSchema = new mongoose.Schema({
+const RoutesSchema = new mongoose.Schema({
   id: {
       type: Number,
       required: true,
@@ -18,4 +18,4 @@ const BusRoutesSchema = new mongoose.Schema({
 
 }, { _id: false,timestamps: false });
 
-module.exports = mongoose.model('BusRoutes', BusRoutesSchema);
+module.exports = mongoose.model('Routes', RoutesSchema);

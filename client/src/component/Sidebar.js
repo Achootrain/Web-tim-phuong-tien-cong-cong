@@ -21,6 +21,8 @@ const Sidebar = () => {
   const [endOptions, setEndOptions] = useState([]);
   const [startCoordinate, setStartCoordinate] = useState(null);
   const [endCoordinate, setEndCoordinate] = useState(null);
+  const [startPlace,setStartPlace]=useState("")
+  const [endPlace,setEndPlace]=useState("")
   const [routeCriteria, setRouteCriteria] = useState(1); // 1: less-transfer, 2: short-time
   const [allowWalking, setAllowWalking] = useState(true);
   const [useMetro, setUseMetro] = useState(false);
@@ -43,7 +45,7 @@ const Sidebar = () => {
       const response = await axios.get(url);
       const pathData = response.data;
       setPath(pathData);
-      console.log("pathData:",pathData)
+  
       if (pathData && pathData.length > 0) {
         const extractedData = pathData.map((path, index) => {
           const stations = path.passed.map((entry) => ({
@@ -105,9 +107,12 @@ const Sidebar = () => {
 
   const handleSelect = async (type, value) => {
     const setCoordinate = type === 'start' ? setStartCoordinate : setEndCoordinate;
+    const setPlace=type=== 'start' ? setStartPlace:setEndPlace;
+
     const coor = await fetchCoordinates(value);
     if (coor && coor[0]) {
       setCoordinate(coor[0]);
+      setPlace(value);
     }
   };
 
@@ -116,7 +121,6 @@ const Sidebar = () => {
     setExpandedRouteIndex(index === expandedRouteIndex ? null : index);
     
   };
-
   const handleBackToRoutes = () => {
     setExpandedRouteIndex(null);
   };
@@ -133,6 +137,7 @@ const Sidebar = () => {
               <div className="flex flex-col gap-2">
                 <AutoComplete
                   className="w-full"
+
                   options={startOptions.map((option) => ({
                     key: option.id,
                     value: option.description,
@@ -149,6 +154,7 @@ const Sidebar = () => {
                 />
                 <AutoComplete
                   className="w-full"
+                 
                   options={endOptions.map((option) => ({
                     key: option.id,
                     value: option.description,
@@ -309,64 +315,109 @@ const Sidebar = () => {
                     </div>
                   </div>
                   <div className="relative pb-4">
-                    {busRoutes[expandedRouteIndex].station.map((station, index, stations) => {
-                      const isTransferPoint =
-                        index === 0 || // luôn hiển thị điểm đầu
-                        index === stations.length - 1 || // luôn hiển thị điểm cuối
-                        station.route !== stations[index - 1]?.route; // khác tuyến so với trạm trước
-                        const routeName = busRoutes[expandedRouteIndex].route.find(route => route.id === station.route)?.name || '';
-                      if (!isTransferPoint) return null;
+                    {busRoutes[expandedRouteIndex] &&
+                      (() => {
+                        const fullStations = busRoutes[expandedRouteIndex].station;
+                        const transferStations = fullStations.filter((station, index, stations) =>
+                          index === 0 ||
+                          index === stations.length - 1 ||
+                          station.route !== stations[index - 1]?.route
+                        );
 
-                      return (
-                        <div key={index} className="relative mb-5">
-                          {index < stations.length - 1 && (
-                            <div className="absolute top-10 bottom-0 left-4 w-0.5 bg-gray-300 z-0"></div>
-                          )}
-                          <div className="flex items-start">
-                            <div className="relative z-10 flex items-center justify-center w-8 h-8 bg-indigo-100 rounded-full border-2 border-indigo-600 mr-4 flex-shrink-0">
-                              <span className="text-xs font-bold">{index + 1}</span>
-                            </div>
-                            <div className="flex-1 border border-gray-200 rounded-lg p-3 bg-white shadow-sm">
-                              <div className="mb-1">
-                                
-                                <p className="text-sm font-medium ">{routeName}</p>
+                        const firstStation = transferStations[0];
+                        const lastStation = transferStations[transferStations.length - 1];
 
+                        const renderCard = (station, index, nextStation) => {
+                          const routeName =
+                            busRoutes[expandedRouteIndex].route.find(route => route.id === station.route)?.name || '';
+                          return (
+                            <div key={index} className="relative mb-5">
+                              {nextStation && (
+                                <div className="absolute top-10 bottom-0 left-4 w-0.5 bg-gray-300 z-0"></div>
+                              )}
 
-                                <div className="flex items-center mt-2 ">
-                                  <span
-                                    className={`text-xs px-2 py-1 rounded mr-2 whitespace-nowrap font-medium ${
-                                      station.route === -1
-                                        ? 'bg-green-100 text-green-800'
-                                        : station.route === 2068 || station.route === 974
-                                        ? 'bg-red-100 text-red-800'
-                                        : 'bg-indigo-100 text-indigo-800'
-                                    }`}
-                                  >
-                                    {station.route === -1
-                                      ? '🚶 Đi bộ'
-                                      : station.route === 2068 || station.route === 974
-                                      ? '🚇 Tàu metro '
-                                      : '🚌 Xe buýt ' }
-                                  </span>
+                              <div className="flex items-start">
+                                <div className="relative z-10 flex items-center justify-center w-8 h-8 bg-indigo-100 rounded-full border-2 border-indigo-600 mr-4 flex-shrink-0">
+                                  <span className="text-xs font-bold">{index + 1}</span>
                                 </div>
-                                <p className="font-medium text-sm">
-                                  📍{station.name}             
-                                </p>
-                                  {station.address && (
-                                  <p className="text-xs text-gray-500 mt-1 ml-5">{station.address}</p>
-                                )}
+                                <div className="flex-1 border border-gray-200 rounded-lg p-3 bg-white shadow-sm">
+                                  <div className="mb-1">
+                                    <p className="text-sm font-medium">{routeName}</p>
+                                    <div className="flex items-center mt-2">
+                                      <span
+                                        className={`text-xs px-2 py-1 rounded mr-2 whitespace-nowrap font-medium ${
+                                          station.route === -1
+                                            ? 'bg-green-100 text-green-800'
+                                            : station.route === 2068 || station.route === 974
+                                            ? 'bg-red-100 text-red-800'
+                                            : 'bg-indigo-100 text-indigo-800'
+                                        }`}
+                                      >
+                                        {station.route === -1
+                                          ? '🚶 Đi bộ'
+                                          : station.route === 2068 || station.route === 974
+                                          ? '🚇 Tàu metro'
+                                          : '🚌 Xe buýt'}
+                                      </span>
+                                    </div>
+
+                                    {nextStation && (
+                                      <p className="text-xs mt-2 ml-2 ">
+                                        Từ <strong>{station.name}</strong> → đến <strong>{nextStation.name}</strong>
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                          );
+                        };
+
+                        return (
+                          <>
+                            {/* StartPlace → Trạm đầu */}
+                            <div className="relative mb-5">
+                              <div className="absolute top-10 bottom-0 left-4 w-0.5 bg-gray-300 z-0"></div>
+                              <div className="flex items-start">
+                                <div className="relative z-10 flex items-center justify-center w-8 h-8 bg-green-100 rounded-full border-2 border-green-600 mr-4 flex-shrink-0">
+                                  <span className="text-xs font-bold">0</span>
+                                </div>
+                                <div className="flex-1 border border-gray-200 rounded-lg p-3 bg-white shadow-sm">
+                                  <p className="text-sm font-medium">🚶 Đi bộ</p>
+                                  <p className="text-xs mt-2 ml-2">
+                                    Từ <strong>{startPlace}</strong> → đến <strong>{firstStation.name}</strong>
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Các tuyến */}
+                           {transferStations.slice(0, -1).map((station, index) =>
+                            renderCard(station, index + 1, transferStations[index + 1])
+                            )}
+                            {/* Trạm cuối → EndPlace */}
+                            <div className="relative mb-5">
+                              <div className="flex items-start">
+                                <div className="relative z-10 flex items-center justify-center w-8 h-8 bg-green-100 rounded-full border-2 border-green-600 mr-4 flex-shrink-0">
+                                  <span className="text-xs font-bold">{transferStations.length + 1}</span>
+                                </div>
+                                <div className="flex-1 border border-gray-200 rounded-lg p-3 bg-white shadow-sm">
+                                  <p className="text-sm font-medium">🚶 Đi bộ</p>
+                                  <p className="text-xs mt-2 ml-2">
+                                    Từ <strong>{lastStation.name}</strong> → đến <strong>{endPlace}</strong>
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()
+                    }
                   </div>
                 </>
-              )}
-            </div>
-          </div>
-        )}
+                )}
+              </div>
+            </div>)}
       </div>
       <div className="flex-1 relative">
         <MapComponent

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const BusStationsSchema = new mongoose.Schema({
+const StationsSchema = new mongoose.Schema({
   stationId: {
       type: Number,
       required: true,
@@ -27,4 +27,4 @@ const BusStationsSchema = new mongoose.Schema({
     },
 }, {_id:false, timestamps: false });
 
-module.exports = mongoose.model('BusStations', BusStationsSchema);
+module.exports = mongoose.model('Stations', StationsSchema);

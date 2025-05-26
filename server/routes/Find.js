@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const BusStations = require('../models/BusStation');
-const BusRoutes = require('../models/BusRoute');
+const Stations = require('../models/Station');
+const Routes = require('../models/Route');
 
 
 const findKroute = require('../function/Djikstra')
@@ -26,7 +26,7 @@ router.get('/bus/route', async (req, res) => {
     const rs = {};
 
     const stationIds = part.passedRoutePairs.map(pair => pair.passed);
-    const stationList = await BusStations.find({ stationId: { $in: stationIds } });
+    const stationList = await Stations.find({ stationId: { $in: stationIds } });
     const stationMap = Object.fromEntries(stationList.map(st => [st.stationId, st]));
 
     // Skip the first and last elements of passedRoutePairs
@@ -41,7 +41,7 @@ router.get('/bus/route', async (req, res) => {
       : [];
 
     rs.pathPoints = part.pathPoints;
-    rs.routes = await BusRoutes.find({ routeId: { $in: part.routes } });
+    rs.routes = await Routes.find({ routeId: { $in: part.routes } });
     rs.routeChanges = part.routeChanges;
     rs.time = part.time;
     rs.distance = part.distance;

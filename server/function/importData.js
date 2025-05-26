@@ -1,46 +1,47 @@
 const fs = require('fs');
 const mongoose = require('mongoose');
 
-const BusStations = require('../models/BusStation');
-const BusRoutes = require('../models/BusRoute'); 
+const Stations = require('../models/Station');
+const Routes = require('../models/Route'); 
+
 const importData = async () => {
   try {
-      //import busStation
-      console.log('🔄 Checking existing BusStations data...');
-      const existingStations = await BusStations.countDocuments();
-      
+      // Import busStation
+      console.log('🔄 Checking existing Stations data...');
+      const existingStations = await Stations.countDocuments();
+
       if (existingStations > 0) {
-          console.log('✅ BusStations data already exists, skipping import.');
+          console.log('✅ Stations data already exists, skipping import.');
       } else {
-          console.log('🔄 Importing BusStations...');
-          const stationsData = fs.readFileSync('./data/BusStations.json', 'utf8');
-          const busStations = JSON.parse(stationsData);
-          await BusStations.insertMany(busStations);
-          console.log('✅ BusStations imported successfully!');
+          console.log('🔄 Importing Stations...');
+          const stationsDataRaw = fs.readFileSync('./data/Stations.json', 'utf8');
+          const stationsData = JSON.parse(stationsDataRaw);
+          await Stations.insertMany(stationsData);
+          console.log('✅ Stations imported successfully!');
       }
 
-      //import busRoute
-        console.log('🔄 Checking existing BusRoutes data...');
-        const existingRoutes = await BusRoutes.countDocuments();
-        if (existingRoutes > 0) {
-            console.log('✅ BusRoutes data already exists, skipping import.');
-        }
-        else {
-            console.log('🔄 Importing BusRoutes...');
-            const routesData = fs.readFileSync('./data/BusRoutes.json', 'utf8');
-            const busRoutes = JSON.parse(routesData);
-            const data = busRoutes.map(route => {
-                return {
-                    id: route.id,
-                    name: route.name,
-                    routeId: route.stations[0].routeId,
-                };
-            }   );
-            await BusRoutes.insertMany(data);
-            console.log('✅ BusRoutes imported successfully!');}
+      // Import busRoute
+      console.log('🔄 Checking existing Routes data...');
+      const existingRoutes = await Routes.countDocuments();
+      
+      if (existingRoutes > 0) {
+          console.log('✅ Routes data already exists, skipping import.');
+      } else {
+          console.log('🔄 Importing Routes...');
+          const routesDataRaw = fs.readFileSync('./data/Routes.json', 'utf8');
+          const routesJson = JSON.parse(routesDataRaw);
+          const data = routesJson.map(route => ({
+              id: route.id,
+              name: route.name,
+              routeId: route.stations[0].routeId,
+          }));
+          await Routes.insertMany(data);
+          console.log('✅ Routes imported successfully!');
+      }
 
   } catch (error) {
       console.error('⛔ Lỗi import dữ liệu:', error);
-    }
+  }
 };
+
 module.exports = { importData };

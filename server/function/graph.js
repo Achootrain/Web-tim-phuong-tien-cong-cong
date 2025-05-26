@@ -1,6 +1,6 @@
 const fs = require('fs');
-const rawData = fs.readFileSync('./data/BusRoutes.json', 'utf-8');
-const busRoutes = JSON.parse(rawData); 
+const rawData = fs.readFileSync('./data/Routes.json', 'utf-8');
+const Routes = JSON.parse(rawData); 
 const {haversine,getNearestBusStations}=require('./NearestStations');
 
 function computePathDistance(pathStr) {
@@ -26,7 +26,7 @@ function computePathDistance(pathStr) {
   return total;
 }
 const graph = {};
-busRoutes.forEach(route => {
+Routes.forEach(route => {
   route.stations.forEach((station, index) => {
     if (!graph[station.stationId]) {
       graph[station.stationId] = { lat:station.lat,lng:station.lng,nextStation:[] };
@@ -74,25 +74,5 @@ Object.keys(graph).forEach(stationId => {
   }
 });
 
-const stationMap = {};
-busRoutes.forEach(route => {
-  route.stations.forEach(station => {
-    const stationData = {
-      routeId: station.routeId,
-      stationDirection: station.stationDirection,
-      stationOrder: station.stationOrder
-    };
-    
-    if (!stationMap[station.stationId]) {
-      stationMap[station.stationId] = [];
-    }
 
-      stationMap[station.stationId].push(stationData);
-    
-  });
-});
-
-
-
-fs.writeFileSync('./data/stationMap.json', JSON.stringify(stationMap, null, 2));
 fs.writeFileSync('./data/graph.json', JSON.stringify(graph, null, 2));

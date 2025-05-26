@@ -1,5 +1,4 @@
 const fs = require('fs');
-
 class Node {
     constructor(id, lat, lng, name,address,type) {
         this.id = id;
@@ -84,7 +83,7 @@ function findKNearestNeighbors(root, testPoint, k, depth = 0, nearest = []) {
 }
 
 // Main function
-const rawData = fs.readFileSync('./data/BusStations.json');
+const rawData = fs.readFileSync('./data/Stations.json');
 const points = JSON.parse(rawData);
 let tree = buildKNNKdTree(points);
 
