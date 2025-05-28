@@ -348,14 +348,14 @@ const Sidebar = () => {
                                         className={`text-xs px-2 py-1 rounded mr-2 whitespace-nowrap font-medium ${
                                           station.route === -1
                                             ? 'bg-green-100 text-green-800'
-                                            : station.route === 2068 || station.route === 974
+                                            : station.route === 12998 || station.route === 10974
                                             ? 'bg-red-100 text-red-800'
                                             : 'bg-indigo-100 text-indigo-800'
                                         }`}
                                       >
                                         {station.route === -1
                                           ? '🚶 Đi bộ'
-                                          : station.route === 2068 || station.route === 974
+                                          : station.route === 12998 || station.route === 10974
                                           ? '🚇 Tàu metro'
                                           : '🚌 Xe buýt'}
                                       </span>
