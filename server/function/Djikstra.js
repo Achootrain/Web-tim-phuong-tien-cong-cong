@@ -19,18 +19,18 @@ class MinHeap {
         this.heap = [];
     }
 
-    insert({ time, node }) {
-        this.heap.push({ time, node });
-        this._bubbleUp(this.heap.length - 1);
-    }
+        insert({ time, node }) {
+            this.heap.push({ time, node });
+            this._bubbleUp(this.heap.length - 1);
+        }
 
-    extractMin() {
-        if (this.heap.length === 1) return this.heap.pop();
-        const min = this.heap[0];
-        this.heap[0] = this.heap.pop();
-        this._bubbleDown(0);
-        return min;
-    }
+        extractMin() {
+            if (this.heap.length === 1) return this.heap.pop();
+            const min = this.heap[0];
+            this.heap[0] = this.heap.pop();
+            this._bubbleDown(0);
+            return min;
+        }
 
     _bubbleUp(index) {
         const element = this.heap[index];
@@ -463,8 +463,14 @@ function findKroute(start, end, K=3, useWalking ,useMetro,mode) {
 }
 
 
-// const start={lat:21.057512296000027,lng:105.73418583400007}
-// const end={lat:21.029180649000068,lng:105.80323993200005}
+// const start={
+//   lat: 21.00659755600003,
+//   lng: 105.84338102000004
+// }
+// const end={
+//   lat: 21.037113042000044,
+//   lng: 105.77478451900004
+// }
 // const results = findKroute(start, end, 3, true,true,0);
 
 // const data = JSON.stringify(results, null, 2);

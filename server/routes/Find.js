@@ -20,7 +20,6 @@ router.get('/bus/route', async (req, res) => {
     metro = metro === 'true';
 
   const result = findKroute(start, end, 3, walking, metro, mode);
-
   const finalresult = [];
   for (const part of result) {
     const rs = {};
@@ -28,7 +27,6 @@ router.get('/bus/route', async (req, res) => {
     const stationIds = part.passedRoutePairs.map(pair => pair.passed);
     const stationList = await Stations.find({ stationId: { $in: stationIds } });
     const stationMap = Object.fromEntries(stationList.map(st => [st.stationId, st]));
-
     // Skip the first and last elements of passedRoutePairs
     rs.passed = part.passedRoutePairs && part.passedRoutePairs.length > 2
       ? part.passedRoutePairs
@@ -39,13 +37,11 @@ router.get('/bus/route', async (req, res) => {
             route: pair.routeId,
           }))
       : [];
-
     rs.pathPoints = part.pathPoints;
     rs.routes = await Routes.find({ routeId: { $in: part.routes } });
     rs.routeChanges = part.routeChanges;
     rs.time = part.time;
     rs.distance = part.distance;
-
     finalresult.push(rs);
   }
 
