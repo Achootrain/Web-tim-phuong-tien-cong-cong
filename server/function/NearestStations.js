@@ -55,7 +55,6 @@ function distanceSquare(lat1, lon1, lat2, lon2) {
 
         return node;
     }
-// K-Nearest Neighbors Search
 function findKNearestNeighbors(root, testPoint, k, depth = 0, nearest = []) {
     if (!root) return nearest;
 
@@ -93,12 +92,10 @@ function getNearestBusStations(lat, lng,k=8) {
   
     let nearestNeighbors = findKNearestNeighbors(tree, testPoint, k);
   
-    // Tính khoảng cách
     for (let neighbor of nearestNeighbors) {
       neighbor.dist = haversine(testPoint.lat, testPoint.lng, neighbor.node.lat, neighbor.node.lng);
     }
   
-    // Chỉ giữ lại những trạm có distance <= 0.5 km
     return nearestNeighbors
       .filter(neighbor => neighbor.dist <= 0.5)
       .map(neighbor => ({

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const init_graph = readGraphData();
-const {getNearestBusStations} = require('../function/NearestStations');
+const {getNearestBusStations} = require('./NearestStations');
 
 
 function readGraphData() {
@@ -13,24 +13,23 @@ function readGraphData() {
   }
 }
 
-// Lớp MinHeap để quản lý hàng đợi ưu tiên
 class MinHeap {
     constructor() {
         this.heap = [];
     }
 
-        insert({ time, node }) {
-            this.heap.push({ time, node });
-            this._bubbleUp(this.heap.length - 1);
-        }
+    insert({ time, node, routeId }) {
+        this.heap.push({ time, node, routeId });
+        this._bubbleUp(this.heap.length - 1);
+    }
 
-        extractMin() {
-            if (this.heap.length === 1) return this.heap.pop();
-            const min = this.heap[0];
-            this.heap[0] = this.heap.pop();
-            this._bubbleDown(0);
-            return min;
-        }
+    extractMin() {
+        if (this.heap.length === 1) return this.heap.pop();
+        const min = this.heap[0];
+        this.heap[0] = this.heap.pop();
+        this._bubbleDown(0);
+        return min;
+    }
 
     _bubbleUp(index) {
         const element = this.heap[index];
@@ -71,311 +70,13 @@ class MinHeap {
     }
 }
 
-// Tốc độ (km/h)
-const busSpeed = 16; // toc do xe buyt
-const walkingSpeed = 3;  // Đi bộ
-const waitingForBus = 5 * 60; // Thời gian chờ bus khi chuyen tuyen
-const waitingForMetro = 25; // Thời gian chờ khi chuyen tuyen metro(giây)
-const metroSpeed=35; // tốc độ metro
 
 
-function dijkstraMinRouteChanges(graph, start, end, useWalking ,metro) {
-    const travel_time = {};
-    const route_changes = {};
-    const previous = {};
-    const routeUsed = {};
-    const pathPoints = {};
-    const distance = {};
-    const walkingDistanceSoFar = {};
-    const pq = new MinHeap();
-    const visited = new Set();
-    const MAX_TOTAL_WALKING_DISTANCE = 0.4; // đơn vị: km
-
-    // Initialize data structures
-    Object.keys(graph).forEach(node => {
-        travel_time[node] = Infinity;
-        route_changes[node] = Infinity;
-        previous[node] = null;
-        routeUsed[node] = null;
-        pathPoints[node] = null;
-        distance[node] = Infinity;
-        walkingDistanceSoFar[node] = 0;
-        
-    });
-
-    const startNode = String(start);
-    travel_time[startNode] = 0;
-    route_changes[startNode] = 0;
-    pq.insert({ changes: 0, time: 0, node: startNode });
-
-    while (!pq.isEmpty()) {
-        const { changes, time, node } = pq.extractMin();
-        if (graph[node].usedNode) continue;
-
-        const visitKey = `${node}-${routeUsed[node] || -1}`;
-        if (visited.has(visitKey)) continue;
-        visited.add(visitKey);
-
-        // Check if we reached the end station
-        if (node === String(end)) {
-            const path = [];
-            const pathP = [];
-            const routes = new Set();
-            let currentNode = node;
-            let dist = 0;
-
-            path.push({ passed: Number(currentNode), routeId: -1 });
-            let routeChangesCnt = 0;
-            while (currentNode !== null) {
-                const routeId = routeUsed[currentNode];
-                if (routeId !== null && routeId !== -1) {
-                    routes.add(routeId);
-                    dist += distance[currentNode];
-                }
-                if (pathPoints[currentNode]) {
-                    pathP.unshift(...pathPoints[currentNode]);
-                }
-                const prevNode = previous[currentNode];
-                if (prevNode) {
-                    path.push({ passed: Number(prevNode), routeId: routeUsed[currentNode] });
-                     const prevRoute = routeUsed[prevNode];
-                      if (routeId !== prevRoute &&routeId!==null&&prevRoute!==null) {
-                        routeChangesCnt++; 
-                    }
-                }
-                currentNode = previous[currentNode];
-            }
-            path.reverse();
-            return {
-                routeChanges: routeChangesCnt-2, // không tính đi bộ ra bến xe đầu và đi bộ về bến xe cuối
-                time: travel_time[node],
-                distance: dist,
-                routes: Array.from(routes),
-                passedRoutePairs: path,
-                pathPoints: pathP
-            };
-        }
-
-        // Bus transit
-        const nextStations = graph[node]?.nextStation || [];
-        for (const neighbor of nextStations) {
-            if(metro===false&&neighbor.type===2)continue;// if not use metro then skip metro edge
-
-            const nextNode = String(neighbor.stationId);
-            const currentRoute = routeUsed[node];
-            const nextRoute = neighbor.routeId;
-            const dist = neighbor.distance;
-
-            const visitKey = `${nextNode}-${nextRoute}`;
-            if (visited.has(visitKey)) continue;
-
-            const speed = (nextNode === '-2'||node==='-1') ? walkingSpeed : ((metro&&neighbor.type===2)?metroSpeed:busSpeed);
-            const transitTime = (dist / speed) * 3600; // Convert to seconds
-            let additionalWaitingTime = 0;
-            let newChanges = route_changes[node];
-
-            // Increment route changes if transferring to a different route
-            if (currentRoute !== null && currentRoute !== nextRoute && nextNode !== '-2'&&node!=='-1') {
-                additionalWaitingTime = (metro&&neighbor.type===2)?waitingForMetro:waitingForBus;
-                newChanges = route_changes[node] + 1;
-            } else if (nextNode === '-2') {
-                newChanges = route_changes[node]; // Walking doesn't count as a route change
-            }
-        
-
-            const newTime = travel_time[node] + transitTime + additionalWaitingTime;
-
-            if (newChanges < route_changes[nextNode] ) {
-                travel_time[nextNode] = newTime;
-                route_changes[nextNode] = newChanges;
-                previous[nextNode] = node;
-                routeUsed[nextNode] = nextRoute;
-                pathPoints[nextNode] = refinePathpoints(neighbor.pathPoints);
-                distance[nextNode] = dist;
-                pq.insert({ changes: newChanges, time: newTime, node: nextNode });
-            }
-        }
-
-      if (useWalking) {
-        const walkingStations = graph[node]?.walkingStation || [];
-        for (const neighbor of walkingStations) {
-        if (metro === false && neighbor.type === 2) continue; // if not use metro then skip metro edge
-        const nextNode = String(neighbor.stationId);
-        const visitKey = `${nextNode}--1`;
-        if (visited.has(visitKey)) continue;
-        const dist = neighbor.distance;
-        const totalWalking = walkingDistanceSoFar[node] + dist;
-        if (totalWalking > MAX_TOTAL_WALKING_DISTANCE) continue; // Skip if walking distance exceeds limit
-
-        const walkingTime = (dist / walkingSpeed) * 3600; // Convert to seconds
-
-       
-        const newTime = travel_time[node] + walkingTime ;
-
-        const newChanges = route_changes[node]; 
-        if (newChanges < route_changes[nextNode] ) {
-            travel_time[nextNode] = newTime;
-            route_changes[nextNode] = newChanges;
-            previous[nextNode] = node;
-            routeUsed[nextNode] = -1; // Walking
-            pathPoints[nextNode] = refinePathpoints(neighbor.pathPoints);
-            distance[nextNode] = dist;
-            pq.insert({ changes: newChanges, time: newTime, node: nextNode });
-                }
-            }
-        }
-    }
-
-    return null; // No path found
-}
-
-function dijkstra( graph,start,end,useWalking ,metro) {
-    const travel_time = {};
-    const previous = {};
-    const routeUsed = {};
-    const pathPoints = {};
-    const distance = {};
-    const pq = new MinHeap();
-    const visited = new Set();
-    
-
-    Object.keys(graph).forEach(node => {
-        travel_time[node] = Infinity;
-        previous[node] = null;
-        routeUsed[node] = null;
-        pathPoints[node] = null;
-        distance[node] = Infinity;
-    });
-    const startNode = String(start);
-    travel_time[startNode] = 0;
-    pq.insert({ time: 0, node: startNode });
-
-
-    while (!pq.isEmpty()) {
-      const { time, node } = pq.extractMin();
-  
-      if(graph[node].usedNode){continue;}
-
-      const visitKey = `${node}-${routeUsed[node]}`;
-      if (visited.has(visitKey)) continue;
-      visited.add(visitKey);
-
-  
-        // Check if we reached  end station
-        if (node === String(end)) {
-            const path = [];
-            const pathP = [];
-            const routes = new Set();
-            let currentNode = node;
-            let routeChanges = 0;
-            let dist=0;
-        
-            path.push({ passed: Number(currentNode), routeId: -1});
-
-            while (currentNode !== null) {
-                const routeId = routeUsed[currentNode];
-                if (routeId !== null && routeId !== -1) {routes.add(routeId);dist+=distance[currentNode]}
-                if (pathPoints[currentNode]) {
-                    pathP.unshift(...pathPoints[currentNode]);
-                }
-                const prevNode = previous[currentNode];
-                if (prevNode) {
-                    const prevRoute = routeUsed[prevNode];
-                    if (routeId !== prevRoute &&routeId!==null&&prevRoute!==null) {
-                        routeChanges++; 
-                    }
-                    
-                    path.push({ passed: Number(prevNode), routeId: routeUsed[currentNode] });
-                }
-                currentNode = previous[currentNode];
-            }
-
-            path.reverse();
-            const resultTime = travel_time[node];
-               return {
-                    routeChanges: routeChanges-2, // khong tinh di bo ra ben xe dau va di bo ve ben xe cuoi
-                    time: resultTime,
-                    distance:dist,
-                    routes: Array.from(routes),
-                    passedRoutePairs: path,
-                    pathPoints: pathP
-                 
-                };
-                  
-          
-        }
-
-        // Bus transit
-        const nextStations = graph[node]?.nextStation || [];
-        for (const neighbor of nextStations) {
-            if(metro===false&&neighbor.type===2)continue;// if not use metro then skip metro edge
-
-            const nextNode = String(neighbor.stationId);
-            const currentRoute = routeUsed[node];
-            const nextRoute = neighbor.routeId;
-            const dist = neighbor.distance;
-            
-            const visitKey = `${nextNode}-${nextRoute}`;
-
-            if (visited.has(visitKey)) continue;
-
-           
-
-            const speed=(nextNode==='-2'||node==='-1')?walkingSpeed:((metro&&neighbor.type===2)?metroSpeed:busSpeed);
-            const transitTime = (dist / speed) * 3600; // Convert to seconds
-            let additionalWaitingTime = 0;// Thời gian chờ thêm nếu chuyển tuyến
-
-            // Add waiting time if transferring to a different route
-           
-            if (currentRoute !== null && currentRoute !== nextRoute && nextNode !== '-2'&&node!==-1) {//chuyen tuyen, khong tinh lan di bo den ben xe dau tien
-                additionalWaitingTime = (metro&&neighbor.type===2)?waitingForMetro:waitingForBus;    
-            } 
-        
-            const newTime = travel_time[node] + transitTime + additionalWaitingTime;
-        
-            
-            if (newTime < travel_time[nextNode]) {
-               
-                travel_time[nextNode] = newTime;
-                previous[nextNode] = node;
-                routeUsed[nextNode] = nextRoute;
-                pathPoints[nextNode] = refinePathpoints(neighbor.pathPoints);
-                distance[nextNode] = dist;
-                pq.insert({ time: newTime, node: nextNode });
-            }
-        }
-
-        // Walking
-        if (useWalking) {
-            const walkingStations = graph[node]?.walkingStation || [];
-            for (const neighbor of walkingStations) {
-              if(metro===false&&neighbor.type===2)continue;// if not use metro then skip metro edge
-             
-                const nextNode = String(neighbor.stationId);
-                const visitKey = `${nextNode}--1`;
-                if (visited.has(visitKey)) continue;
-
-                const dist = neighbor.distance;
-                const walkingTime = (dist / walkingSpeed) * 3600; // Convert to seconds
-
-                const newTime = travel_time[node] + walkingTime;
-
-            
-                if (newTime < travel_time[nextNode]) {
-                    travel_time[nextNode] = newTime;
-                    previous[nextNode] = node;
-                    routeUsed[nextNode] = -1; // Walking
-                    pathPoints[nextNode] = refinePathpoints(neighbor.pathPoints);
-                    distance[nextNode] = dist;
-                    pq.insert({ time: newTime, node: nextNode });
-                }
-            }
-        }
-        
-    }
-   
-    return null; // No path found
-}
+const busSpeed = 16; 
+const metroSpeed = 35; 
+const walkingSpeed = 4; 
+const waitingForBus = 10*60; 
+const waitingForMetro = 15*60; 
 
 
 function refinePathpoints(pathString) {
@@ -387,76 +88,341 @@ function refinePathpoints(pathString) {
 }
 
 
+function createStateKey(node, routeId) {
+    return `${node}|${routeId}`;
+}
+
+function caculateSpeed(type) {
+    if (type === 1) return busSpeed;
+    if (type === 3) return metroSpeed;
+    return walkingSpeed;}
+
+function caculateWaitingTime(type,currentRoute,nextRoute,v) {
+    if (currentRoute !== nextRoute && v !== '-2') {
+        return (type === 3 || type === 4) ? waitingForMetro : waitingForBus;
+    }
+    return 0;
+}
 
 
-function findKroute(start, end, K=3, useWalking ,useMetro,mode) {
-    const graph = JSON.parse(JSON.stringify(init_graph));
-    const startStation = getNearestBusStations(start.lat, start.lng);
-    const endStation = getNearestBusStations(end.lat, end.lng);
 
-    // Thêm nút bắt đầu (-1) và kết thúc (-2)
-    graph[-1] = {
-        nextStation: startStation.map(station => ({
-            stationId: station.id,
-            routeId: -1,
-            pathPoints: `${start.lng},${start.lat} ${station.lng},${station.lat}`,
-            distance: station.distance
-        }))
-    };
-    graph[-2] = { nextStation: [] };
-    endStation.forEach(station => {
-        graph[station.id].nextStation.push({
-            stationId: -2,
-            routeId: -1,
-            pathPoints: `${station.lng},${station.lat} ${end.lng},${end.lat}`,
-            distance: station.distance
-        });
+function djikstraMinTimeMinRouteChanges(graph, start, end, useWalking, metro) {
+    const dist = {}; 
+    const prev = {};
+    const routeUsed = {};
+    const pathPoints = {};
+    const edgeDistance = {};
+    const routeChanges = {};
+    const travel_time = {}; 
+
+    const visited = new Set(); 
+    const pq = new MinHeap(); 
+
+    const startNode = String(start);
+    const startKey = createStateKey(startNode, -1);
+    
+    // Init
+    dist[startKey] = 0;
+    prev[startKey] = null;
+    routeUsed[startKey] = null;
+    pathPoints[startKey] = null;
+    edgeDistance[startKey] = 0;
+    routeChanges[startKey] = 0;
+    travel_time[startKey] = 0;
+    
+   
+    pq.insert({ 
+        node: startNode, 
+        routeId: -1, 
+        time: 0 
     });
+    //loop
+    while (!pq.isEmpty()) {
+        const { node: u, routeId: currentRoute, time: currentPriority } = pq.extractMin();
+        const currentKey = createStateKey(u, currentRoute);
 
-    const results = [];
+        if (visited.has(currentKey)) continue;
+        visited.add(currentKey);
+        
+        const currentRouteChanges = routeChanges[currentKey] || 0;
+        const currentTime = travel_time[currentKey] || 0;
+        
+        if (u === String(end)) {
+            const path = [];
+            const pathP = [];
+            const routes = new Set();
+            let current = currentKey;
+            let totalDist = 0;
+            let newRouteChanges = 0;
+            let lastRouteId = null;
+            while (current !== null) {
+                const [nodeStr, routeStr] = current.split('|');
+                const nodeNum = Number(nodeStr);
+                const routeId = routeStr ? Number(routeStr) : null;
+                path.unshift({ passed: nodeNum, routeId: lastRouteId ?? -1 });
 
-    // Chạy Dijkstra lần đầu
-    let firstPath;
-    if(mode===1){
-    firstPath = dijkstraMinRouteChanges(graph, -1, -2, useWalking,useMetro);}
-    else{
-        firstPath = dijkstra(graph, -1, -2, useWalking,useMetro);}
-
-    if (!firstPath) return results;
-    results.push(firstPath);
-   for (let k = 1; k < K; k++) {
-        // Lấy passedRoutePairs từ đường đi trước đó
-        const previousPaths = results[k - 1].passedRoutePairs;
-
-        // Xóa các cạnh đã sử dụng từ previousPaths
-        for (let i = 0; i < previousPaths.length - 1; i++) {
-            const from = previousPaths[i].passed;
-            const to = previousPaths[i + 1].passed;
-            const routeId = previousPaths[i].routeId;
-
-            if (routeId === -1 && from !== -1 && to !== -2) {
-                const edgeIndex = graph[from]?.walkingStation?.findIndex(s => s.stationId == to && s.routeId === -1);
-                if (edgeIndex !== -1) {
-                    // Xóa cạnh khỏi walkingStation
-                    graph[from].walkingStation.splice(edgeIndex, 1);
+                if (routeId !== null && routeId !== -1) {
+                    routes.add(routeId);
+                    totalDist += edgeDistance[current] || 0;
                 }
-            } else {
-                const edgeIndex = graph[from]?.nextStation?.findIndex(s => s.stationId == to && s.routeId == routeId);
-                if (edgeIndex !== -1) {
-                    // Xóa cạnh khỏi nextStation
-                    graph[from].nextStation.splice(edgeIndex, 1);
+
+                if (pathPoints[current]) {
+                    pathP.unshift(...pathPoints[current]);
+                }
+
+                const prevKey = prev[current];
+                if (prevKey) {
+                    const [prevNode, prevRouteStr] = prevKey.split('|');
+                    const prevRouteId = Number(prevRouteStr);
+                    if (routeId !== prevRouteId) {
+                        newRouteChanges++;
+                    }
+                }
+
+                lastRouteId = routeId ?? -1;
+                current = prev[current];
+            }
+            return {
+                routeChanges: newRouteChanges - 2, // trừ đi đoạn đi bộ đầu/cuối
+                time: currentTime,
+                distance: totalDist,
+                routes: Array.from(routes),
+                passedRoutePairs: path,
+                pathPoints: pathP
+            };
+        }
+        //visit neighbors
+        const neighbors = graph[u]?.nextStation || [];
+
+        for (const neighbor of neighbors) {
+            const v = String(neighbor.stationId);
+            const type = neighbor.type;
+            const nextRoute = neighbor.routeId;
+            
+         
+            if ((type === 3 || type === 4) && !metro) continue;
+            if ((type === 2 || type === 4) && !useWalking) continue;
+
+            const nextKey = createStateKey(v, nextRoute);
+            if (visited.has(nextKey)) continue;
+
+            const distBetween = neighbor.distance;
+
+            let speed= caculateSpeed(type);
+            let waitingTime = caculateWaitingTime(type, currentRoute, nextRoute, v);
+            const transitTime = (distBetween / speed) * 3600; 
+
+            let newRouteChanges = currentRouteChanges;
+            const isRouteChange = (currentRoute !== nextRoute && currentRoute !== -1 && nextRoute !== -1 && v !== '-2');
+            if (isRouteChange) {
+                newRouteChanges++;
+            }
+            // priority
+            const newTime = currentTime + transitTime + waitingTime;
+            const newPriority = newRouteChanges * 10000 + newTime;
+            const update = !(nextKey in routeChanges) || 
+                               newRouteChanges < routeChanges[nextKey] ||
+                               (newRouteChanges === routeChanges[nextKey] && newTime < travel_time[nextKey]);
+            
+            if (update) {
+                dist[nextKey] = newPriority;
+                prev[nextKey] = currentKey;
+                routeUsed[nextKey] = nextRoute;
+                pathPoints[nextKey] = refinePathpoints(neighbor.pathPoints);
+                edgeDistance[nextKey] = distBetween;
+                routeChanges[nextKey] = newRouteChanges;
+                travel_time[nextKey] = newTime;
+                pq.insert({ time: newPriority,node: v,  routeId: nextRoute});
+            }
+        }
+    }
+
+    return null; 
+}
+
+
+function djikstraMinTime(graph, start, end, useWalking, metro) {
+   //init
+    const dist = {}; 
+    const prev = {};
+    const routeUsed = {};
+    const pathPoints = {};
+    const edgeDistance = {};
+
+    const visited = new Set(); 
+    const pq = new MinHeap(); 
+
+
+
+    const startNode = String(start);
+    
+    const startKey = createStateKey(startNode, -1);
+    dist[startKey] = 0;
+    prev[startKey] = null;
+    routeUsed[startKey] = null;
+    pathPoints[startKey] = null;
+    edgeDistance[startKey] = 0;
+    
+    pq.insert({ node: startNode, routeId: -1, time: 0 });
+
+    while (!pq.isEmpty()) {
+        const { node: u, routeId: currentRoute, time: currentTime } = pq.extractMin();
+        const currentKey = createStateKey(u, currentRoute);
+    
+        if (visited.has(currentKey)) continue;
+        visited.add(currentKey);
+        
+        if (u === String(end)) {
+            const path = [];
+            const pathP = [];
+            const routes = new Set();
+            let current = currentKey;
+            let routeChanges = 0;
+            let totalDist = 0;
+          
+           let lastRouteId = null;
+
+            while (current !== null) {
+                const [nodeStr, routeStr] = current.split('|');
+                const nodeNum = Number(nodeStr);
+                const routeId = routeStr ? Number(routeStr) : null;
+                path.unshift({ passed: nodeNum, routeId: lastRouteId ?? -1 });
+
+                if (routeId !== null && routeId !== -1) {
+                    routes.add(routeId);
+                    totalDist += edgeDistance[current] || 0;
+                }
+
+                if (pathPoints[current]) {
+                    pathP.unshift(...pathPoints[current]);
+                }
+
+                const prevKey = prev[current];
+                if (prevKey) {
+                    const [prevNode, prevRouteStr] = prevKey.split('|');
+                    const prevRouteId = Number(prevRouteStr);
+                    if (routeId !== prevRouteId) {
+                        routeChanges++;
+                    }
+                }
+
+                lastRouteId = routeId ?? -1;
+                current = prev[current];
+            }
+
+    
+            return {
+                routeChanges:  routeChanges - 2, // trừ đi đoạn đi bộ đầu/cuối
+                time: currentTime,
+                distance: totalDist,
+                routes: Array.from(routes),
+                passedRoutePairs: path,
+                pathPoints: pathP
+            };
+        }
+        //visit neighbors
+        const neighbors = graph[u]?.nextStation || [];
+
+        for (const neighbor of neighbors) {
+            const v = String(neighbor.stationId);
+            const type = neighbor.type;
+            const nextRoute = neighbor.routeId;
+            
+            if ((type === 3 || type === 4) && !metro) continue;
+            if ((type === 2 || type === 4) && !useWalking) continue;
+
+            const nextKey = createStateKey(v, nextRoute);
+            if (visited.has(nextKey)) continue;
+       
+            const distBetween = neighbor.distance;
+
+            let speed=caculateSpeed(type);
+            let waitingTime = caculateWaitingTime(type, currentRoute, nextRoute, v);
+            
+            const transitTime = (distBetween / speed) * 3600; // giây
+        
+            const alt = currentTime + transitTime + waitingTime;
+            
+            if (!(nextKey in dist) || alt < dist[nextKey]) {
+                dist[nextKey] = alt;
+                prev[nextKey] = currentKey;
+                routeUsed[nextKey] = nextRoute;
+                pathPoints[nextKey] = refinePathpoints(neighbor.pathPoints);
+                edgeDistance[nextKey] = distBetween;
+                pq.insert({ time: alt, node: v, routeId: nextRoute });
+            }
+        }
+    }
+
+    return null; 
+}
+
+
+// diversify route
+function findKroute(start, end, K = 3, useWalking, useMetro, mode) {
+    
+     const graph = JSON.parse(JSON.stringify(init_graph));
+        const startStation = getNearestBusStations(start.lat,start.lng);
+        const endStation = getNearestBusStations(end.lat, end.lng);
+    
+        graph[-1] = {
+            nextStation: startStation.map(station => ({
+                stationId: station.id,
+                routeId: -1,
+                pathPoints: `${start.lng},${start.lat} ${station.lng},${station.lat}`,
+                distance: station.distance,
+                type:5//walk to bus
+            }))
+        };
+        graph[-2] = { nextStation: [] };
+        endStation.forEach(station => {
+            graph[station.id].nextStation.push({
+                stationId: -2,
+                routeId: -1,
+                pathPoints: `${station.lng},${station.lat} ${end.lng},${end.lat}`,
+                distance: station.distance,
+                type:5//bus to walk
+            });
+        });
+    
+    const results = [];
+    
+    for (let k = 0; k < K; k++) {
+       
+
+        for (let pathIndex = 0; pathIndex < results.length; pathIndex++) {
+            const previousPaths = results[pathIndex].passedRoutePairs;
+            
+            for (let i = 0; i < previousPaths.length - 1; i++) {
+                const from = previousPaths[i].passed;
+                const to = previousPaths[i + 1].passed;
+                const fromRouteId = previousPaths[i].routeId;
+                const toRouteId = previousPaths[i + 1].routeId;
+
+                if (from !== -1 && to !== -2 && graph[from]?.nextStation) {
+                    const edgeIndex = graph[from].nextStation.findIndex(edge => {
+                        return edge.stationId === to && 
+                               (edge.routeId === toRouteId || 
+                                (fromRouteId === -1 && edge.routeId === toRouteId) ||
+                                (toRouteId === -1 && edge.routeId === fromRouteId));
+                    });
+
+                    if (edgeIndex !== -1) {
+                        graph[from].nextStation.splice(edgeIndex, 1);
+                    }
                 }
             }
         }
+
         let res;
-        if(mode===1){
-         res = dijkstraMinRouteChanges(graph, -1, -2, useWalking,useMetro);}
-        else{
-            res = dijkstra(graph, -1, -2, useWalking,useMetro);
+        if (mode === 1) {
+            res = djikstraMinTimeMinRouteChanges(graph, -1, -2, useWalking, useMetro);
+        } else {
+            res = djikstraMinTime(graph, -1, -2, useWalking, useMetro);
         }
+
         if (!res) break;
         results.push(res);
-        
     }
 
     return results;
@@ -471,7 +437,7 @@ function findKroute(start, end, K=3, useWalking ,useMetro,mode) {
 //   lat: 21.037113042000044,
 //   lng: 105.77478451900004
 // }
-// const results = findKroute(start, end, 3, true,true,0);
+// const results = findKroute(start, end, 3, false,true,1);
 
 // const data = JSON.stringify(results, null, 2);
 // fs.writeFileSync('./data/paths2.json', data, 'utf8', (err) => {
@@ -479,6 +445,4 @@ function findKroute(start, end, K=3, useWalking ,useMetro,mode) {
 //   console.log('Data written to file');
 // })
 
-module.exports=findKroute;
-
-//node ./function/Djikstra.js
+module.exports = findKroute;

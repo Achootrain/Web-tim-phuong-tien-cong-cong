@@ -5,7 +5,7 @@ const {haversine,getNearestBusStations}=require('./NearestStations');
 
 function computePathDistance(pathStr) {
   if (!pathStr || pathStr.trim() === '') {
-    return 0; // Không có path => khoảng cách = 0
+    return 0; 
   }
 
   const points = pathStr.trim().split(/\s+/).map(p => {
@@ -13,7 +13,6 @@ function computePathDistance(pathStr) {
     return { lat, lng };
   });
 
-  // Nếu chỉ có 1 điểm hoặc tất cả điểm đều giống nhau => khoảng cách = 0
   if (points.length < 2 || points.every(p => p.lat === points[0].lat && p.lng === points[0].lng)) {
     return 0;
   }
@@ -30,15 +29,21 @@ Routes.forEach(route => {
   route.stations.forEach((station, index) => {
     if (!graph[station.stationId]) {
       graph[station.stationId] = { lat:station.lat,lng:station.lng,nextStation:[] };
-      const walkingStation = getNearestBusStations(station.lat, station.lng);
-      graph[station.stationId].walkingStation = walkingStation.map(walkingStation => ({
-        stationId: walkingStation.id,
-        distance:walkingStation.distance,
-        pathPoints: `${station.lng},${station.lat} ${walkingStation.lng},${walkingStation.lat}`,
-        routeId:-1,
-        type:walkingStation.type,
-      }));
+      
+    const walkingStations = getNearestBusStations(station.lat, station.lng);
+      walkingStations.forEach(walkingStation => {
+        if (walkingStation.id !== station.stationId) {
+          graph[station.stationId].nextStation.push({
+            stationId: walkingStation.id,
+            distance: walkingStation.distance,
+            pathPoints: `${station.lng},${station.lat} ${walkingStation.lng},${walkingStation.lat}`,
+            routeId: -1,
+            type: walkingStation.type===1?2:4,//bus-walk-bus:bus-walk-metro
+          });
+        }
+      });
     }
+
 
     if (index < route.stations.length - 1) {
         const nextStation = route.stations[index + 1];
@@ -54,24 +59,10 @@ Routes.forEach(route => {
             routeId: nextStation.routeId,
             pathPoints: path,
             distance:computePathDistance(path),
-            type:nextStation.stationType,
+            type:nextStation.stationType===1?1:3//bus-bus:metro-metro
         });
     }
   });
-});
-Object.keys(graph).forEach(stationId => {
-  const station = graph[stationId];
-  
-  // Check if the station has walking stations
-  if (station.walkingStation && station.walkingStation.length > 0) {
-    // Filter out walking stations where stationId matches either:
-    // 1. The current station's stationId, or
-    // 2. Any nextStation.stationId
-    station.walkingStation = station.walkingStation.filter(walking => 
-      String(walking.stationId) !== stationId && // Exclude current station's ID
-      !station.nextStation.some(next => next.stationId === walking.stationId) // Exclude nextStation IDs
-    );
-  }
 });
 
 
