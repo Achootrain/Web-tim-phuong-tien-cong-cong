@@ -363,7 +363,7 @@ const Sidebar = () => {
 
                                     {nextStation && (
                                       <p className="text-xs mt-2 ml-2 ">
-                                        Từ <strong>{station.name}</strong> → đến <strong>{nextStation.name}</strong>
+                                        Từ <strong>{station.name} {station.address}</strong> → đến <strong>{nextStation.name} {nextStation.address}</strong>
                                       </p>
                                     )}
                                   </div>

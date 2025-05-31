@@ -10,7 +10,6 @@ app.use(express.json());
 // Kết nối MongoDB
 mongoose.connect('mongodb://localhost:27017/mydtb')
   .then(async () => {
-    console.log('✅ Kết nối MongoDB thành công');
     importData();
     
   })
@@ -26,4 +25,4 @@ app.use('/Find', findRouters);
 
 
 // Khởi động server
-app.listen(3001, () => console.log('🚀 Server đang chạy ở port 3001'));
+app.listen(3001, () => console.log(' Server running at port 3001'));

@@ -34,27 +34,27 @@ function distanceSquare(lat1, lon1, lat2, lon2) {
     return (lat1 - lat2) ** 2 + (lon1 - lon2) ** 2;
 }
 
-    function buildKNNKdTree(points, depth = 0) {
-        if (points.length === 0) return null;
+function buildKNNKdTree(points, depth = 0) {
+    if (points.length === 0) return null;
 
-        let axis = depth % 2;
-        points.sort((a, b) => (axis === 0 ? a.lat - b.lat : a.lng - b.lng));
+    let axis = depth % 2;
+    points.sort((a, b) => (axis === 0 ? a.lat - b.lat : a.lng - b.lng));
 
-        let median = Math.floor(points.length / 2);
-        let node = new Node(
-            points[median].stationId,
-            points[median].lat,
-            points[median].lng,
-            points[median].stationName,
-            points[median].stationAddress,
-            points[median].stationType
-        
-        );
-        node.left = buildKNNKdTree(points.slice(0, median), depth + 1);
-        node.right = buildKNNKdTree(points.slice(median + 1), depth + 1);
+    let median = Math.floor(points.length / 2);
+    let node = new Node(
+        points[median].stationId,
+        points[median].lat,
+        points[median].lng,
+        points[median].stationName,
+        points[median].stationAddress,
+        points[median].stationType
+    
+    );
+    node.left = buildKNNKdTree(points.slice(0, median), depth + 1);
+    node.right = buildKNNKdTree(points.slice(median + 1), depth + 1);
 
-        return node;
-    }
+    return node;
+}
 function findKNearestNeighbors(root, testPoint, k, depth = 0, nearest = []) {
     if (!root) return nearest;
 
@@ -86,7 +86,7 @@ const rawData = fs.readFileSync('./data/Stations.json');
 const points = JSON.parse(rawData);
 let tree = buildKNNKdTree(points);
 
-function getNearestBusStations(lat, lng,k=8) {
+function getNearestStations(lat, lng,k=8) {
     const testPoint = { lat, lng };
   
   
@@ -111,4 +111,4 @@ function getNearestBusStations(lat, lng,k=8) {
   
 
 
-module.exports = {getNearestBusStations,haversine};
+module.exports = {getNearestStations,haversine};

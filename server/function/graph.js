@@ -1,8 +1,7 @@
 const fs = require('fs');
 const rawData = fs.readFileSync('./data/Routes.json', 'utf-8');
 const Routes = JSON.parse(rawData); 
-const {haversine,getNearestBusStations}=require('./NearestStations');
-
+const {haversine,getNearestStations}=require('./NearestStations');
 function computePathDistance(pathStr) {
   if (!pathStr || pathStr.trim() === '') {
     return 0; 
@@ -24,13 +23,14 @@ function computePathDistance(pathStr) {
 
   return total;
 }
+//Type: 1: bus-bus, 2: walk to bus, 3: metro-metro, 4: walk to metro
 const graph = {};
 Routes.forEach(route => {
   route.stations.forEach((station, index) => {
     if (!graph[station.stationId]) {
       graph[station.stationId] = { lat:station.lat,lng:station.lng,nextStation:[] };
       
-    const walkingStations = getNearestBusStations(station.lat, station.lng);
+    const walkingStations = getNearestStations(station.lat, station.lng);
       walkingStations.forEach(walkingStation => {
         if (walkingStation.id !== station.stationId) {
           graph[station.stationId].nextStation.push({
@@ -38,7 +38,7 @@ Routes.forEach(route => {
             distance: walkingStation.distance,
             pathPoints: `${station.lng},${station.lat} ${walkingStation.lng},${walkingStation.lat}`,
             routeId: -1,
-            type: walkingStation.type===1?2:4,//bus-walk-bus:bus-walk-metro
+            type: walkingStation.type===1?2:4,//walk to bus:walk to metro
           });
         }
       });
@@ -50,7 +50,7 @@ Routes.forEach(route => {
         if(nextStation.stationId===station.stationId) return;
         const path = [
           `${station.lng},${station.lat}`,
-          nextStation.pathPoints?.trim(), // sẽ bỏ qua nếu undefined hoặc ""
+          nextStation.pathPoints?.trim(), 
           `${nextStation.lng},${nextStation.lat}`
         ].filter(Boolean).join(' ');
         

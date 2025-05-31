@@ -1,6 +1,6 @@
 const fs = require('fs');
 const init_graph = readGraphData();
-const {getNearestBusStations} = require('./NearestStations');
+const {getNearestStations} = require('./NearestStations');
 
 
 function readGraphData() {
@@ -202,6 +202,7 @@ function djikstraMinTimeMinRouteChanges(graph, start, end, useWalking, metro) {
          
             if ((type === 3 || type === 4) && !metro) continue;
             if ((type === 2 || type === 4) && !useWalking) continue;
+       
 
             const nextKey = createStateKey(v, nextRoute);
             if (visited.has(nextKey)) continue;
@@ -213,7 +214,7 @@ function djikstraMinTimeMinRouteChanges(graph, start, end, useWalking, metro) {
             const transitTime = (distBetween / speed) * 3600; 
 
             let newRouteChanges = currentRouteChanges;
-            const isRouteChange = (currentRoute !== nextRoute && currentRoute !== -1 && nextRoute !== -1 && v !== '-2');
+            const isRouteChange = ((currentRoute !== nextRoute && v !== '-2')||nextRoute === -1) ;
             if (isRouteChange) {
                 newRouteChanges++;
             }
@@ -362,8 +363,8 @@ function djikstraMinTime(graph, start, end, useWalking, metro) {
 function findKroute(start, end, K = 3, useWalking, useMetro, mode) {
     
      const graph = JSON.parse(JSON.stringify(init_graph));
-        const startStation = getNearestBusStations(start.lat,start.lng);
-        const endStation = getNearestBusStations(end.lat, end.lng);
+        const startStation = getNearestStations(start.lat,start.lng);
+        const endStation = getNearestStations(end.lat, end.lng);
     
         graph[-1] = {
             nextStation: startStation.map(station => ({
@@ -428,21 +429,15 @@ function findKroute(start, end, K = 3, useWalking, useMetro, mode) {
     return results;
 }
 
+const start = {lat:20.988928921000024,lng:105.83639558900006}
+const end={lat:21.037178020000056,lng:105.77668289600007}
 
-// const start={
-//   lat: 21.00659755600003,
-//   lng: 105.84338102000004
-// }
-// const end={
-//   lat: 21.037113042000044,
-//   lng: 105.77478451900004
-// }
-// const results = findKroute(start, end, 3, false,true,1);
+const results = findKroute(start, end, 3, true,true,1);
 
-// const data = JSON.stringify(results, null, 2);
-// fs.writeFileSync('./data/paths2.json', data, 'utf8', (err) => {
-//   if (err) throw err;
-//   console.log('Data written to file');
-// })
+const data = JSON.stringify(results, null, 2);
+fs.writeFileSync('./data/paths2.json', data, 'utf8', (err) => {
+  if (err) throw err;
+  console.log('Data written to file');
+})
 
 module.exports = findKroute;
