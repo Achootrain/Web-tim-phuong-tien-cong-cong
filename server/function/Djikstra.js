@@ -429,15 +429,15 @@ function findKroute(start, end, K = 3, useWalking, useMetro, mode) {
     return results;
 }
 
-const start = {lat:20.988928921000024,lng:105.83639558900006}
-const end={lat:21.037178020000056,lng:105.77668289600007}
+// const start = {lat:20.988928921000024,lng:105.83639558900006}
+// const end={lat:21.037178020000056,lng:105.77668289600007}
 
-const results = findKroute(start, end, 3, true,true,1);
+// const results = findKroute(start, end, 3, true,true,1);
 
-const data = JSON.stringify(results, null, 2);
-fs.writeFileSync('./data/paths2.json', data, 'utf8', (err) => {
-  if (err) throw err;
-  console.log('Data written to file');
-})
+// const data = JSON.stringify(results, null, 2);
+// fs.writeFileSync('./data/paths2.json', data, 'utf8', (err) => {
+//   if (err) throw err;
+//   console.log('Data written to file');
+// })
 
 module.exports = findKroute;
