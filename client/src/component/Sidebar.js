@@ -244,7 +244,7 @@ const Sidebar = () => {
                 >
                   {tab === 'walk' && '🚶 Đi bộ'}
                   {tab === 'bus' && '🚌 Xe buýt'}
-                  {tab === 'metro' && '🚇 Metro'}
+                  {tab === 'metro' && '🚇 Tàu Metro'}
                 </button>
               ))}
             </div>
@@ -270,7 +270,7 @@ const Sidebar = () => {
                 <div className="p-4 text-sm text-gray-500">Tính năng đi bộ chưa được hỗ trợ.</div>
               )}
               {activeTab === 'metro' && (
-                <div className="p-4 text-sm text-gray-500">Tính năng metro chưa được hỗ trợ.</div>
+                <div className="p-4 text-sm text-gray-500">Tính năng tìm tàu metro chưa được hỗ trợ.</div>
               )}
             </div>
           </>

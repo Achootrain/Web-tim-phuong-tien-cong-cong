@@ -106,7 +106,7 @@ function caculateWaitingTime(type,currentRoute,nextRoute,v) {
 
 
 
-function djikstraMinTimeMinRouteChanges(graph, start, end, useWalking, metro) {
+function djikstraMinRouteChanges(graph, start, end, useWalking, metro) {
     const dist = {}; 
     const prev = {};
     const routeUsed = {};
@@ -153,7 +153,7 @@ function djikstraMinTimeMinRouteChanges(graph, start, end, useWalking, metro) {
             const routes = new Set();
             let current = currentKey;
             let totalDist = 0;
-            let newRouteChanges = 0;
+            let change = 0;
             let lastRouteId = null;
             while (current !== null) {
                 const [nodeStr, routeStr] = current.split('|');
@@ -175,7 +175,7 @@ function djikstraMinTimeMinRouteChanges(graph, start, end, useWalking, metro) {
                     const [prevNode, prevRouteStr] = prevKey.split('|');
                     const prevRouteId = Number(prevRouteStr);
                     if (routeId !== prevRouteId) {
-                        newRouteChanges++;
+                        change++;
                     }
                 }
 
@@ -183,7 +183,7 @@ function djikstraMinTimeMinRouteChanges(graph, start, end, useWalking, metro) {
                 current = prev[current];
             }
             return {
-                routeChanges: newRouteChanges - 2, // trừ đi đoạn đi bộ đầu/cuối
+                routeChanges:  Math.max(change - 2,0), // trừ đi đoạn đi bộ đầu/cuối
                 time: currentTime,
                 distance: totalDist,
                 routes: Array.from(routes),
@@ -214,13 +214,13 @@ function djikstraMinTimeMinRouteChanges(graph, start, end, useWalking, metro) {
             const transitTime = (distBetween / speed) * 3600; 
 
             let newRouteChanges = currentRouteChanges;
-            const isRouteChange = ((currentRoute !== nextRoute && v !== '-2')||nextRoute === -1) ;
+            const isRouteChange = ((currentRoute !== nextRoute && v !== '-2')||nextRoute===-1); ;
             if (isRouteChange) {
                 newRouteChanges++;
             }
             // priority
             const newTime = currentTime + transitTime + waitingTime;
-            const newPriority = newRouteChanges * 10000 + newTime;
+            const newPriority = newRouteChanges * 1000 + newTime;
             const update = !(nextKey in routeChanges) || 
                                newRouteChanges < routeChanges[nextKey] ||
                                (newRouteChanges === routeChanges[nextKey] && newTime < travel_time[nextKey]);
@@ -313,7 +313,7 @@ function djikstraMinTime(graph, start, end, useWalking, metro) {
 
     
             return {
-                routeChanges:  routeChanges - 2, // trừ đi đoạn đi bộ đầu/cuối
+                routeChanges:  Math.max(routeChanges - 2,0), // trừ đi đoạn đi bộ đầu/cuối
                 time: currentTime,
                 distance: totalDist,
                 routes: Array.from(routes),
@@ -338,7 +338,7 @@ function djikstraMinTime(graph, start, end, useWalking, metro) {
             const distBetween = neighbor.distance;
 
             let speed=caculateSpeed(type);
-            let waitingTime = caculateWaitingTime(type, currentRoute, nextRoute, v);
+            let waitingTime = caculateWaitingTime(type, currentRoute, nextRoute, v);//tinh thoi gian cho neu đổi tuy
             
             const transitTime = (distBetween / speed) * 3600; // giây
         
@@ -417,7 +417,7 @@ function findKroute(start, end, K = 3, useWalking, useMetro, mode) {
 
         let res;
         if (mode === 1) {
-            res = djikstraMinTimeMinRouteChanges(graph, -1, -2, useWalking, useMetro);
+            res = djikstraMinRouteChanges(graph, -1, -2, useWalking, useMetro);
         } else {
             res = djikstraMinTime(graph, -1, -2, useWalking, useMetro);
         }

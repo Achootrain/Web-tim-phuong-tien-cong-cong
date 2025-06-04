@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
 const BusRouteCard = ({busRoute,index}) => {
-  const [isExpanded, setIsExpanded] = useState(false);
 
   
   return (
